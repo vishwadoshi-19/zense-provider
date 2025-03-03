@@ -6,7 +6,7 @@ import Head from "next/head";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <>
+    <AuthProvider>
       <Head>
         <title>Zense Provider Dashboard</title>
         <meta
@@ -20,6 +20,6 @@ export default function App({ Component, pageProps }: AppProps) {
       </Head>
       <Component {...pageProps} />
       <OfflineAlert />
-    </>
+    </AuthProvider>
   );
 }
