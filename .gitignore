@@ -1,0 +1,23 @@
+# Node modules
+node_modules/
+
+# Next.js build output
+.next/
+
+# Logs
+logs/
+*.log
+
+# Dependency directories
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+
+# Vercel
+.vercel
+
+# Other
+.DS_Store
