@@ -1,100 +1,100 @@
-import React, { useState } from 'react';
-import { useRouter } from 'next/router';
-import { useAuth } from '@/components/auth/AuthContext';
-import Layout from '@/components/common/Layout';
-import JobList from '@/components/dashboard/JobList';
-import { Job } from '@/types';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
+import React, { useState } from "react";
+import { useRouter } from "next/router";
+import { useAuth } from "@/components/auth/AuthContext";
+import Layout from "@/components/common/Layout";
+import JobList from "@/components/dashboard/JobList";
+import { Job } from "@/types";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 // Mock data for jobs
 const mockJobData: Job[] = [
   {
-    id: 'job1',
-    providerId: 'provider1',
-    customerId: 'customer1',
-    staffId: '2',
-    patientName: 'Alice Johnson',
+    id: "job1",
+    providerId: "provider1",
+    customerId: "customer1",
+    staffId: "2",
+    patientName: "Abhay Tyagi",
     patientAge: 65,
-    patientGender: 'Female',
-    serviceType: 'Nurse',
-    shiftType: '24 Hour',
-    address: '123 Main St, City',
-    startDate: new Date('2025-03-01'),
+    patientGender: "Male",
+    serviceType: "Nurse",
+    shiftType: "24 Hour",
+    address: "123 Main St, City",
+    startDate: new Date("2025-03-01"),
     endDate: null,
-    status: 'In Progress',
-    notes: 'Patient requires regular medication and assistance with mobility',
+    status: "In Progress",
+    notes: "Patient requires regular medication and assistance with mobility",
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    id: 'job2',
-    providerId: 'provider1',
-    customerId: 'customer2',
-    staffId: '3',
-    patientName: 'Bob Smith',
+    id: "job2",
+    providerId: "provider1",
+    customerId: "customer2",
+    staffId: "3",
+    patientName: "Animesh Solanki",
     patientAge: 72,
-    patientGender: 'Male',
-    serviceType: 'Semi-Nurse',
-    shiftType: '12 Hour',
-    address: '456 Oak St, City',
-    startDate: new Date('2025-03-05'),
+    patientGender: "Male",
+    serviceType: "Semi-Nurse",
+    shiftType: "12 Hour",
+    address: "456 Oak St, City",
+    startDate: new Date("2025-03-05"),
     endDate: null,
-    status: 'In Progress',
-    notes: 'Post-surgery care needed',
+    status: "In Progress",
+    notes: "Post-surgery care needed",
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    id: 'job3',
-    providerId: 'provider1',
-    customerId: 'customer3',
-    staffId: '5',
-    patientName: 'Carol Davis',
+    id: "job3",
+    providerId: "provider1",
+    customerId: "customer3",
+    staffId: "5",
+    patientName: "Shankar Roy",
     patientAge: 58,
-    patientGender: 'Female',
-    serviceType: 'Nurse',
-    shiftType: '6 Hour',
-    address: '789 Pine St, City',
-    startDate: new Date('2025-03-10'),
+    patientGender: "Male",
+    serviceType: "Nurse",
+    shiftType: "6 Hour",
+    address: "789 Pine St, City",
+    startDate: new Date("2025-03-10"),
     endDate: null,
-    status: 'In Progress',
-    notes: 'Diabetic patient requiring insulin administration',
+    status: "In Progress",
+    notes: "Diabetic patient requiring insulin administration",
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    id: 'job4',
-    providerId: 'provider1',
-    customerId: 'customer4',
+    id: "job4",
+    providerId: "provider1",
+    customerId: "customer4",
     staffId: null,
-    patientName: 'David Wilson',
+    patientName: "Manisha Jain",
     patientAge: 80,
-    patientGender: 'Male',
-    serviceType: 'Attendant',
-    shiftType: '24 Hour',
-    address: '101 Elm St, City',
-    startDate: new Date('2025-03-15'),
+    patientGender: "Female",
+    serviceType: "Attendant",
+    shiftType: "24 Hour",
+    address: "101 Elm St, City",
+    startDate: new Date("2025-03-15"),
     endDate: null,
-    status: 'Pending',
-    notes: 'Elderly patient requiring general assistance',
+    status: "Pending",
+    notes: "Elderly patient requiring general assistance",
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    id: 'job5',
-    providerId: 'provider1',
-    customerId: 'customer5',
+    id: "job5",
+    providerId: "provider1",
+    customerId: "customer5",
     staffId: null,
-    patientName: 'Eva Brown',
-    patientAge:  45,
-    patientGender: 'Female',
-    serviceType: 'Attendant',
-    shiftType: '12 Hour',
-    address: '202 Cedar St, City',
-    startDate: new Date('2025-03-20'),
+    patientName: "Maithili Shukla",
+    patientAge: 45,
+    patientGender: "Female",
+    serviceType: "Attendant",
+    shiftType: "12 Hour",
+    address: "202 Cedar St, City",
+    startDate: new Date("2025-03-20"),
     endDate: null,
-    status: 'Pending',
-    notes: 'Patient recovering from hip replacement',
+    status: "Pending",
+    notes: "Patient recovering from hip replacement",
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -108,29 +108,29 @@ const JobsPage = () => {
   // Redirect if not logged in
   React.useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push("/login");
     }
   }, [user, loading, router]);
 
   const handleAddJob = () => {
     // Implement add job functionality
-    console.log('Add job clicked');
+    console.log("Add job clicked");
   };
 
   const handleEditJob = (job: Job) => {
     // Implement edit job functionality
-    console.log('Edit job clicked', job);
+    console.log("Edit job clicked", job);
   };
 
   const handleDeleteJob = (jobId: string) => {
     // Implement delete job functionality
-    console.log('Delete job clicked', jobId);
-    setJobList(jobList.filter(job => job.id !== jobId));
+    console.log("Delete job clicked", jobId);
+    setJobList(jobList.filter((job) => job.id !== jobId));
   };
 
   const handleAssignStaff = (job: Job) => {
     // Implement assign staff functionality
-    console.log('Assign staff clicked', job);
+    console.log("Assign staff clicked", job);
   };
 
   if (loading) {
@@ -146,10 +146,12 @@ const JobsPage = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Manage Jobs</h1>
-          <p className="text-gray-500 mt-1">View, assign, and manage customer job requests</p>
+          <p className="text-gray-500 mt-1">
+            View, assign, and manage customer job requests
+          </p>
         </div>
 
-        <JobList 
+        <JobList
           jobList={jobList}
           onAddJob={handleAddJob}
           onEditJob={handleEditJob}
