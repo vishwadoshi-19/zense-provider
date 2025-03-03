@@ -28,7 +28,7 @@ const LoginPage = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <Link href="/" className="inline-block">
-            <span className="text-3xl font-bold text-primary">Nurch</span>
+            <span className="text-3xl font-bold text-primary">Zense</span>
             <span className="ml-2 text-sm bg-accent text-white px-2 py-0.5 rounded">
               Provider
             </span>

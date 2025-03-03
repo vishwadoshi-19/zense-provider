@@ -1,5 +1,5 @@
-import React from 'react';
-import Link from 'next/link';
+import React from "react";
+import Link from "next/link";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -10,17 +10,26 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
             <p className="text-sm text-gray-600">
-              &copy; {currentYear} Nurch. All rights reserved.
+              &copy; {currentYear} Zense. All rights reserved.
             </p>
           </div>
           <div className="flex space-x-6">
-            <Link href="/privacy" className="text-sm text-gray-600 hover:text-primary">
+            <Link
+              href="/privacy"
+              className="text-sm text-gray-600 hover:text-primary"
+            >
               Privacy Policy
             </Link>
-            <Link href="/terms" className="text-sm text-gray-600 hover:text-primary">
+            <Link
+              href="/terms"
+              className="text-sm text-gray-600 hover:text-primary"
+            >
               Terms of Service
             </Link>
-            <Link href="/contact" className="text-sm text-gray-600 hover:text-primary">
+            <Link
+              href="/contact"
+              className="text-sm text-gray-600 hover:text-primary"
+            >
               Contact Us
             </Link>
           </div>

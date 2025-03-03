@@ -1,14 +1,20 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
-  User as FirebaseUser
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '@/utils/firebase';
-import { Provider } from '@/types';
+  User as FirebaseUser,
+} from "firebase/auth";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "@/utils/firebase";
+import { Provider } from "@/types";
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -16,7 +22,11 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   isOffline: boolean;
-  signup: (email: string, password: string, providerData: Partial<Provider>) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    providerData: Partial<Provider>
+  ) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -26,7 +36,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -47,33 +57,37 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     // Set initial status
     setIsOffline(!navigator.onLine);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-      
+
       if (user) {
         try {
-          const providerDoc = await getDoc(doc(db, 'providers', user.uid));
+          const providerDoc = await getDoc(doc(db, "providers", user.uid));
           if (providerDoc.exists()) {
             setProviderData(providerDoc.data() as Provider);
           }
         } catch (error: any) {
-          console.error('Error fetching provider data:', error);
+          console.error("Error fetching provider data:", error);
           // If we're offline, don't show an error, just use cached data if available
           if (!isOffline) {
-            setError(`Failed to fetch provider data: ${error.message || 'Unknown error'}`);
+            setError(
+              `Failed to fetch provider data: ${
+                error.message || "Unknown error"
+              }`
+            );
           }
         } finally {
           setLoading(false);
@@ -87,14 +101,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => unsubscribe();
   }, [isOffline]);
 
-  const signup = async (email: string, password: string, providerData: Partial<Provider>) => {
+  const signup = async (
+    email: string,
+    password: string,
+    providerData: Partial<Provider>
+  ) => {
     try {
       setError(null);
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
 
       // Create provider document in Firestore
-      await setDoc(doc(db, 'providers', user.uid), {
+      await setDoc(doc(db, "providers", user.uid), {
         ...providerData,
         id: user.uid,
         email,
