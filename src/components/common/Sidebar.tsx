@@ -1,6 +1,6 @@
-import React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
+import React from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import {
   LayoutDashboard,
   Users,
@@ -11,7 +11,7 @@ import {
   Phone,
   Settings,
   HelpCircle,
-} from 'lucide-react';
+} from "lucide-react";
 
 const Sidebar = () => {
   const router = useRouter();
@@ -22,38 +22,38 @@ const Sidebar = () => {
 
   const navItems = [
     {
-      name: 'Dashboard',
-      path: '/dashboard',
+      name: "Dashboard",
+      path: "/dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
-      name: 'Manage Staff',
-      path: '/staff',
+      name: "Manage Staff",
+      path: "/staff",
       icon: <Users className="h-5 w-5" />,
     },
     {
-      name: 'Assign Jobs',
-      path: '/jobs',
+      name: "Assign Jobs",
+      path: "/jobs",
       icon: <Briefcase className="h-5 w-5" />,
     },
     {
-      name: 'Track Availability',
-      path: '/availability',
+      name: "Track Availability",
+      path: "/availability",
       icon: <Calendar className="h-5 w-5" />,
     },
     {
-      name: 'Track Work',
-      path: '/attendance',
+      name: "Track Work",
+      path: "/attendance",
       icon: <Clock className="h-5 w-5" />,
     },
     {
-      name: 'Profile',
-      path: '/profile',
+      name: "Profile",
+      path: "/profile",
       icon: <UserCircle className="h-5 w-5" />,
     },
     {
-      name: 'Contact Details',
-      path: '/contact',
+      name: "Contact Details",
+      path: "/contact",
       icon: <Phone className="h-5 w-5" />,
     },
   ];
@@ -68,8 +68,8 @@ const Sidebar = () => {
               href={item.path}
               className={`flex items-center px-4 py-3 text-sm rounded-md ${
                 isActive(item.path)
-                  ? 'bg-primary text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  ? "bg-primary text-white"
+                  : "text-gray-700 hover:bg-gray-100"
               }`}
             >
               {item.icon}

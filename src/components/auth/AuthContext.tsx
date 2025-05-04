@@ -46,7 +46,9 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
+  // const [user, setUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<FirebaseUser | null>(null);
+
   const [providerData, setProviderData] = useState<Provider | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

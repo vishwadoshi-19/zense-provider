@@ -18,7 +18,7 @@ const mockStaffData: Staff[] = [
     contactNumber: "9876543210",
     email: "john@example.com",
     address: "123 Main St, City",
-    experience: 3,
+    experience: "3",
     availability: true,
     currentAssignment: null,
     createdAt: new Date(),
@@ -32,7 +32,7 @@ const mockStaffData: Staff[] = [
     contactNumber: "9876543211",
     email: "jane@example.com",
     address: "456 Oak St, City",
-    experience: 5,
+    experience: "5",
     availability: true,
     currentAssignment: "job1",
     createdAt: new Date(),
@@ -46,7 +46,7 @@ const mockStaffData: Staff[] = [
     contactNumber: "9876543212",
     email: "robert@example.com",
     address: "789 Pine St, City",
-    experience: 2,
+    experience: "2",
     availability: false,
     currentAssignment: "job2",
     createdAt: new Date(),
@@ -60,7 +60,7 @@ const mockStaffData: Staff[] = [
     contactNumber: "9876543213",
     email: "sarah@example.com",
     address: "101 Elm St, City",
-    experience: 1,
+    experience: "1",
     availability: true,
     currentAssignment: null,
     createdAt: new Date(),
@@ -74,7 +74,7 @@ const mockStaffData: Staff[] = [
     contactNumber: "9876543214",
     email: "michael@example.com",
     address: "202 Cedar St, City",
-    experience: 7,
+    experience: "7",
     availability: false,
     currentAssignment: "job3",
     createdAt: new Date(),
@@ -271,7 +271,7 @@ const AvailabilityPage = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium">Semi-Nurses</CardTitle>
             </CardHeader>
@@ -323,7 +323,7 @@ const AvailabilityPage = () => {
                 ))}
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
 
         <Card>

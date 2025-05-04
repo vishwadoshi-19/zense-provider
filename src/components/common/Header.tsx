@@ -23,7 +23,7 @@ const Header = () => {
         <div className="flex items-center">
           <Link href="/dashboard" className="flex items-center">
             <span className="text-2xl font-bold text-primary">Zense</span>
-            <span className="ml-2 text-sm bg-accent text-white px-2 py-0.5 rounded">
+            <span className="ml-2 text-sm bg-accent text-black px-2 py-0.5 rounded">
               Provider
             </span>
           </Link>

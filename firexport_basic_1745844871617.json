@@ -1,0 +1,64 @@
+[
+  {
+    "Document ID": "3qX9Ijq4smUfm2ZJtbhuM4c45nY2",
+    "additionalInfo": "",
+    "agency": "zense",
+    "carryOwnFood12hrs": "yes",
+    "createdAt": "24 April 2025 at 15:20:13 UTC+5:30",
+    "district": "delhi",
+    "educationCertificate": "https://firebasestorage.googleapis.com/v0/b/airy-adapter-451212-b8.firebasestorage.app/o/users%2F3qX9Ijq4smUfm2ZJtbhuM4c45nY2%2Fcertificates%2Factivity%20popup.jpg?alt=media&token=73196725-faa2-4c06-87ea-69b6a383fab0",
+    "educationQualification": "ANM",
+    "expectedWages": {
+      "5hrs": 200,
+      "12hrs": 400,
+      "24hrs": 800
+    },
+    "experienceYears": "2-5",
+    "extraServicesOffered": [
+      "Bathing & sponge the customer",
+      "Take the customer for a visit to doctor or lab",
+      "Booking a cab on customer's mobile app"
+    ],
+    "foodPreference": "veg",
+    "fullName": "Vishwa ",
+    "gender": "male",
+    "hasOngoingJob": true,
+    "identityDocuments": {
+      "aadharFront": "https://firebasestorage.googleapis.com/v0/b/airy-adapter-451212-b8.firebasestorage.app/o/users%2F3qX9Ijq4smUfm2ZJtbhuM4c45nY2%2Fdocuments%2Faadhar_front_172357__Manual_for_the_Gamified_Daily_Planner_Level_Up_Your_Productivity_Like_a_Game___Introduction_Welcome_to_the_Gamified_Daily_Planner_a_fun_and_engaging_way_to_structure_your_day_stay_pro.png?alt=media&token=b2d1b42d-0a5c-42c3-8975-1a2f86996b18",
+      "panNumber": "",
+      "aadharNumber": "444444444444",
+      "panDocument": "",
+      "aadharBack": "https://firebasestorage.googleapis.com/v0/b/airy-adapter-451212-b8.firebasestorage.app/o/users%2F3qX9Ijq4smUfm2ZJtbhuM4c45nY2%2Fdocuments%2Faadhar_back_172357__Manual_for_the_Gamified_Daily_Planner_Level_Up_Your_Productivity_Like_a_Game___Introduction_Welcome_to_the_Gamified_Daily_Planner_a_fun_and_engaging_way_to_structure_your_day_stay_pro.png?alt=media&token=91ad6f18-cc0d-4282-8b99-db7c8fc266f5"
+    },
+    "jobRole": "nurse",
+    "languagesKnown": ["English", "Hindi", "Gujarati"],
+    "lastStep": "details",
+    "location": "",
+    "maritalStatus": "single",
+    "name": "Vishwa ",
+    "phone": "+915555555555",
+    "preferredShifts": ["Morning Shift (6 AM - 2 PM)", "Part Time"],
+    "previewUrl": "blob:https://zense-staff.vercel.app/84834cc3-076a-48cb-931e-493251386ca7",
+    "profilePhoto": "https://firebasestorage.googleapis.com/v0/b/airy-adapter-451212-b8.firebasestorage.app/o/profile-photos%2F3qX9Ijq4smUfm2ZJtbhuM4c45nY2?alt=media&token=598f296f-fee1-4aa7-b4a1-28b112632299",
+    "providerId": "zense",
+    "role": "staff",
+    "selfTestimonial": null,
+    "smokes": "yes",
+    "status": "live",
+    "subDistricts": [
+      "all",
+      "Central Delhi",
+      "East Delhi",
+      "New Delhi",
+      "North Delhi",
+      "North East Delhi",
+      "North West Delhi",
+      "Shahdara",
+      "South Delhi",
+      "South East Delhi",
+      "South West Delhi",
+      "West Delhi"
+    ],
+    "updatedAt": "24 April 2025 at 15:20:13 UTC+5:30"
+  }
+]

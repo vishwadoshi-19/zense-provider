@@ -19,11 +19,11 @@ export interface Staff {
   id: string;
   providerId: string;
   name: string;
-  type: 'Attendant' | 'Nurse' | 'Semi-Nurse';
+  type: "Attendant" | "Nurse";
   contactNumber: string;
   email: string;
   address: string;
-  experience: number;
+  experience: string;
   availability: boolean;
   currentAssignment: string | null;
   createdAt: Date;
@@ -35,16 +35,20 @@ export interface Job {
   providerId: string;
   customerId: string;
   staffId: string | null;
-  patientName: string;
-  patientAge: number;
-  patientGender: 'Male' | 'Female' | 'Other';
-  serviceType: 'Attendant' | 'Nurse' | 'Semi-Nurse';
-  shiftType: '6 Hour' | '12 Hour' | '24 Hour';
+  description: string;
+  customerName: string;
+  customerAge: number;
+  customerGender: "Male" | "Female" | "Other";
+  serviceType: "Attendant" | "Nurse" | "Semi-Nurse";
+  JobType: "6 Hour" | "12 Hour" | "24 Hour";
   address: string;
   startDate: Date;
+  requirements: string[];
   endDate: Date | null;
-  status: 'Pending' | 'Assigned' | 'In Progress' | 'Completed' | 'Cancelled';
+  status: "Pending" | "assigned" | "completed" | "ongoing";
   notes: string;
+  district: string;
+  subDistrict: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,7 +60,7 @@ export interface Attendance {
   date: Date;
   clockIn: Date | null;
   clockOut: Date | null;
-  status: 'Present' | 'Absent' | 'Late';
+  status: "Present" | "Absent" | "Late";
   notes: string;
   createdAt: Date;
   updatedAt: Date;
@@ -91,4 +95,67 @@ export interface AdditionalInfo {
   replacementTime: string;
   provisionTime: string;
   extraInfo: string;
+}
+
+export interface UserData {
+  name: string;
+  status: "unregistered" | "registered" | "live";
+  phone: string;
+  profilePhoto?: string;
+  previewUrl?: string;
+  location?: string;
+  gender?: string;
+  role: "user" | "provider" | "staff" | "admin";
+  lastStep: "details";
+  createdAt: any; // Firestore Timestamp
+  updatedAt: any; // Firestore Timestamp
+  hasOngoingJob?: boolean; // Added property
+}
+
+export interface StaffDetails {
+  name: string;
+  phone: string;
+  agency: string;
+  profilePhoto: string | null;
+  location: string;
+  gender: string;
+  district: string;
+  subDistricts: string[];
+
+  providerId: string;
+  expectedWages: {
+    "5hrs": number;
+    "12hrs": number;
+    "24hrs": number;
+  };
+  educationQualification: string;
+  educationCertificate: string;
+  experienceYears: string;
+  maritalStatus: string;
+  languagesKnown: string[];
+  preferredShifts: string[];
+  jobRole: string;
+  extraServicesOffered: string[];
+  foodPreference: string;
+  smokes: string;
+  carryOwnFood12hrs: string;
+  additionalInfo?: string;
+  selfTestimonial?: {
+    customerName: string;
+    customerPhone: string;
+    recording: string;
+  } | null;
+  identityDocuments: {
+    aadharNumber: string;
+    aadharFront: string;
+    aadharBack: string;
+    panNumber?: string;
+    panDocument?: string;
+  };
+  createdAt: any; // Firestore Timestamp
+  updatedAt: any; // Firestore Timestamp
+}
+
+export interface FormState {
+  [key: string]: string | string[] | File | null | number;
 }
