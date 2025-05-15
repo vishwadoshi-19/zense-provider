@@ -40,14 +40,14 @@ const ProfilePage = () => {
 
   // Mock provider data if not available
   const provider = providerData || {
-    id: "provider1",
-    businessName: "Healthcare Solutions",
-    ownerName: "John Smith",
+    id: "zense",
+    businessName: "Zense Pvt. Ltd.",
+    ownerName: "SSS",
     yearsInBusiness: 5,
-    address: "123 Main Street, City, State, 12345",
-    contactNumber: "9876543210",
-    emergencyContact: "9876543211",
-    email: "contact@healthcaresolutions.com",
+    address: "Delhi, India",
+    contactNumber: "9220249040",
+    emergencyContact: "9220249040",
+    email: "contact@zense.in",
     panNumber: "ABCDE1234F",
     gstNumber: "22AAAAA0000A1Z5",
     businessHours: "Mon-Fri: 9 AM - 6 PM",
