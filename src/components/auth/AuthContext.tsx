@@ -16,6 +16,9 @@ import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/utils/firebase";
 import { Provider } from "@/types";
 
+import dotenv from "dotenv";
+dotenv.config();
+
 interface AuthContextType {
   user: FirebaseUser | null;
   providerData: Provider | null;
@@ -108,33 +111,52 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     password: string,
     providerData: Partial<Provider>
   ) => {
-    try {
-      setError(null);
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
+    // try {
+    //   setError(null);
+    //   const userCredential = await createUserWithEmailAndPassword(
+    //     auth,
+    //     email,
+    //     password
+    //   );
+    //   const user = userCredential.user;
 
-      // Create provider document in Firestore
-      await setDoc(doc(db, "providers", user.uid), {
-        ...providerData,
-        id: user.uid,
-        email,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    } catch (error: any) {
-      setError(error.message);
-      throw error;
-    }
+    //   // Create provider document in Firestore
+    //   await setDoc(doc(db, "providers", user.uid), {
+    //     ...providerData,
+    //     id: user.uid,
+    //     email,
+    //     createdAt: serverTimestamp(),
+    //     updatedAt: serverTimestamp(),
+    //   });
+    // } catch (error: any) {
+    //   setError(error.message);
+    //   throw error;
+    // }
+    throw new Error(
+      "Signup not available , Login using Superadmin credentials only"
+    );
   };
 
   const login = async (email: string, password: string) => {
     try {
       setError(null);
-      await signInWithEmailAndPassword(auth, email, password);
+
+      // Define the superadmin credentials
+      const superAdminEmail = process.env.NEXT_PUBLIC_SUPERADMIN_EMAIL;
+      const superAdminPassword = process.env.NEXT_PUBLIC_SUPERADMIN_PASSWORD;
+      console.log(
+        "Superadmin Email:",
+        superAdminEmail,
+        "Superadmin Password:",
+        superAdminPassword
+      );
+
+      // Check if the provided credentials match the superadmin credentials
+      if (email == superAdminEmail && password == superAdminPassword) {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        throw new Error("Only the superadmin is allowed to log in.");
+      }
     } catch (error: any) {
       setError(error.message);
       throw error;

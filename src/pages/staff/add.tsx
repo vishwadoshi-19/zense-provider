@@ -40,6 +40,87 @@ import {
 } from "@/lib/firebase/firestore";
 import { set } from "date-fns";
 
+import { StaffData } from "@/types/StaffData";
+import { useRouter } from "next/router";
+
+const SERVICES = {
+  Mobility: [
+    "Walking assistance",
+    "Turn position in bed",
+    "Motion exercises",
+    "Light massages",
+  ],
+  Personal_care: ["Oral hygiene", "Skin care", "Assist in getting dressed"],
+  Hygiene: ["Help in toileting", "Changing diapers", "Changing catheter"],
+  Nutrition: ["Assist in feeding", "Help in fluid intake"],
+  Support: ["Companionship", "Polite conversations"],
+  Other: [
+    "Give medicine",
+    "Accompany for Doctor's visit",
+    "Book a cab",
+    "Assist during diagnostic tests",
+    "Physiotherapy",
+    "Giving injection",
+    "Change medical dressing",
+    "Change drip",
+    "Bathing & sponge the customer",
+    "Clean the room of customer",
+    "Making tea / Boiling milk for customer",
+    "Measuring vitals - BP, Sugar etc.",
+    "Washing clothes of customer",
+    "Jhaadu/Poocha & dusting of customer's room",
+    "Cut fruits for customer",
+    "Can shave the beard of customer",
+  ],
+};
+
+type District = "delhi" | "mumbai" | "bangalore";
+
+const DISTRICTS: string[] = ["Delhi", "Mumbai", "Bangalore"];
+
+const SUB_DISTRICTS: Record<District, string[]> = {
+  delhi: [
+    "Central Delhi",
+    "East Delhi",
+    "New Delhi",
+    "North Delhi",
+    "North East Delhi",
+    "North West Delhi",
+    "Shahdara",
+    "South Delhi",
+    "South East Delhi",
+    "South West Delhi",
+    "West Delhi",
+  ],
+  mumbai: [
+    "Colaba",
+    "Dadar",
+    "Andheri",
+    "Bandra",
+    "Borivali",
+    "Goregaon",
+    "Juhu",
+    "Kurla",
+    "Mulund",
+    "Powai",
+    "Vikhroli",
+  ],
+  bangalore: [
+    "Bangalore East",
+    "Bangalore North",
+    "Bangalore South",
+    "Yelahanka",
+    "KR Puram",
+    "Jayanagar",
+    "Rajajinagar",
+    "BTM Layout",
+    "Malleswaram",
+    "Basavanagudi",
+    "Whitefield",
+    "Electronic City",
+  ],
+};
+
 const AddStaffPage = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +137,8 @@ const AddStaffPage = () => {
     gender: "",
     maritalStatus: "",
     jobRole: "",
+    dateOfBirth: "", // New field
+    religion: "", // New field
 
     // Profile Photo
     profilePhoto: null as File | null,
@@ -77,7 +160,7 @@ const AddStaffPage = () => {
 
     // Skills
     languages: [] as string[],
-    services: [] as string[],
+    services: {} as Record<string, string[]>,
 
     // Additional Info
     foodPreference: "",
@@ -96,6 +179,39 @@ const AddStaffPage = () => {
     aadharBack: null as File | null,
     panNumber: "",
     panCard: null as File | null,
+
+    // New fields
+    currentAddress: {
+      // New field
+      street: "",
+      city: "",
+      state: "",
+      zip: "",
+    },
+    permanentAddress: {
+      // New field
+      street: "",
+      city: "",
+      state: "",
+      zip: "",
+    },
+    isCurrentAddressSameAsPermanent: false, // New field
+    isActive: false, // New field with default
+    aadharVerified: false, // New field with default
+    policeVerified: false, // New field with default
+    bankDetails: {
+      // New field
+      accountName: "",
+      accountNumber: "",
+      ifscCode: "",
+      bankName: "",
+      bankBranch: "",
+    },
+    availability: [] as { startDate: string; endDate: string }[], // New field
+    // New fields for Agency and Location
+    providerId: "",
+    district: [] as string[],
+    subDistricts: [] as string[],
   });
 
   // Handle phone number input
@@ -122,17 +238,35 @@ const AddStaffPage = () => {
 
   // Handle checkbox changes
   const handleCheckboxChange = (
-    name: string,
-    value: string,
+    category: string,
+    service: string,
     checked: boolean
   ) => {
     setFormData((prev) => {
-      const currentValues = prev[name as keyof typeof prev] as string[];
+      const updatedServices = { ...prev.services };
+
       if (checked) {
-        return { ...prev, [name]: [...currentValues, value] };
+        // Add the service to the category array
+        if (!updatedServices[category]) {
+          updatedServices[category] = [];
+        }
+        if (!updatedServices[category].includes(service.toLowerCase())) {
+          updatedServices[category].push(service.toLowerCase());
+        }
       } else {
-        return { ...prev, [name]: currentValues.filter((v) => v !== value) };
+        // Remove the service from the category array
+        if (updatedServices[category]) {
+          updatedServices[category] = updatedServices[category].filter(
+            (item) => item !== service.toLowerCase()
+          );
+          // Optional: Remove the category key if the array becomes empty
+          if (updatedServices[category].length === 0) {
+            delete updatedServices[category];
+          }
+        }
       }
+
+      return { ...prev, services: updatedServices };
     });
   };
 
@@ -199,7 +333,7 @@ const AddStaffPage = () => {
       toast({
         title: "Error",
         description:
-          "An error occurred while creating the user. Please try again.",
+          "An error occurred while submitting the form. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -241,6 +375,7 @@ const AddStaffPage = () => {
           formData.profilePhoto,
           `users/${userId}/profilePhotos/${formData.profilePhoto.name}`
         );
+        setFormData((prev) => ({ ...prev, profilePhotoURL })); // Store the uploaded file URL in the new field
         console.log("Profile photo uploaded:", profilePhotoURL);
       }
 
@@ -251,6 +386,9 @@ const AddStaffPage = () => {
           `users/${userId}/certificates/${formData.certificate.name}`
         );
         setFormData((prev) => ({ ...prev, certificateURL })); // Store the uploaded file URL in the new field
+
+        // Assuming you want to store the URL in formData as well
+        setFormData((prev) => ({ ...prev, certificateURL }));
         console.log("Certificate uploaded:", certificateURL);
       }
 
@@ -260,6 +398,7 @@ const AddStaffPage = () => {
           formData.aadharFront,
           `users/${userId}/documents/aadhar_front_${formData.aadharFront.name}`
         );
+        setFormData((prev) => ({ ...prev, aadharFrontURL })); // Store the uploaded file URL in the new field
         console.log("Aadhar front uploaded:", aadharFrontURL);
       }
 
@@ -269,6 +408,7 @@ const AddStaffPage = () => {
           formData.aadharBack,
           `users/${userId}/documents/aadhar_back_${formData.aadharBack.name}`
         );
+        setFormData((prev) => ({ ...prev, aadharBackURL })); // Store the uploaded file URL in the new field
         console.log("Aadhar back uploaded:", aadharBackURL);
       }
 
@@ -278,6 +418,7 @@ const AddStaffPage = () => {
           formData.panCard,
           `users/${userId}/documents/pan_${formData.panCard.name}`
         );
+        setFormData((prev) => ({ ...prev, panCardURL })); // Store the uploaded file URL in the new field
         console.log("PAN card uploaded:", panCardURL);
       }
 
@@ -289,16 +430,34 @@ const AddStaffPage = () => {
           formData.video, // Changed from recording
           `users/${userId}/testimonials/${formData.video.name}` // Changed path
         );
+        setFormData((prev) => ({ ...prev, videoURL })); // Store the uploaded file URL in the new field
         console.log("Video uploaded:", videoURL); // Changed log
       }
 
       // Prepare data for saving
-      const dataToSave = {
+
+      const dataToSave: any = {
+        phone: phoneNumber ? `+91${phoneNumber}` : "", // Add phone number from state
+        providerId: formData.providerId || "", // Include new field
+        status: "unregistered", // Set initial status
         // Map formData to the structure expected by saveFormData in firestore.ts
         name: formData.fullName || "",
         gender: formData.gender || "",
-        maritalStatus: formData.maritalStatus || "",
         jobRole: formData.jobRole || "",
+        maritalStatus: formData.maritalStatus || "",
+        dateOfBirth: formData.dateOfBirth || "", // New field
+        religion: formData.religion || "", // New field
+        currentAddress: formData.currentAddress, // New field
+        permanentAddress: formData.isCurrentAddressSameAsPermanent
+          ? formData.currentAddress // Use current address if same
+          : formData.permanentAddress, // Otherwise use permanent address
+        isCurrentAddressSameAsPermanent:
+          formData.isCurrentAddressSameAsPermanent, // New field
+        isActive: formData.isActive, // New field
+        aadharVerified: formData.aadharVerified, // New field
+        policeVerified: formData.policeVerified, // New field
+        bankDetails: formData.bankDetails, // New field
+        availability: formData.availability, // New field
         expectedWages: {
           "5hrs": parseFloat(formData.lessThan5Hours) || 0,
           "12hrs": parseFloat(formData.hours12) || 0,
@@ -309,7 +468,7 @@ const AddStaffPage = () => {
         experienceYears: formData.experience || "", // Ensure experience is saved as string
         preferredShifts: formData.preferredShifts || [],
         languagesKnown: formData.languages || [],
-        extraServicesOffered: formData.services || [],
+        extraServicesOffered: formData.services,
         foodPreference: formData.foodPreference || "",
         smokes: formData.smoking || "",
         carryOwnFood12hrs: formData.carryFood || "",
@@ -321,6 +480,7 @@ const AddStaffPage = () => {
               recording: videoURL,
             }
           : null, // Map to object or null
+        profilePhoto: profilePhotoURL || "", // Include profile photo URL
         identityDocuments: {
           aadharNumber: formData.aadharNumber || "",
           aadharFront: aadharFrontURL || "", // Pass URL after upload
@@ -328,11 +488,9 @@ const AddStaffPage = () => {
           panNumber: formData.panNumber || "",
           panDocument: panCardURL || "", // Use panDocument for consistency
         },
-        phone: phoneNumber ? `+91${phoneNumber}` : "", // Add phone number from state
-        status: "registered", // Set initial status
-        providerId: "zense", // Assuming a default providerId
-        profilePhoto: profilePhotoURL || "", // Include profile photo URL
-        // Note: agency, location, district, subDistricts are not included as they are not in the current form state.
+        district: formData.district || [], // Include new field
+        subDistricts: formData.subDistricts || [], // Include new field
+        services: formData.services || [], // Include new field
         // Add other fields as needed based on firexport_basic_1745844871617.json and FormState type
       };
 
@@ -375,6 +533,7 @@ const AddStaffPage = () => {
       console.log("Form submission process finished.");
     }
   };
+  const router = useRouter();
   return (
     <Layout>
       <div className="container mx-auto py-10 px-4">
@@ -392,46 +551,90 @@ const AddStaffPage = () => {
                   The staff member has been successfully registered in the
                   system.
                 </p>
-                <Button
-                  onClick={() => {
-                    setIsSuccess(false);
-                    setPhoneNumber("");
-                    setUserId("");
-                    setIsUserCreated(false); // Reset user created state
-                    setFormData({
-                      fullName: "",
-                      gender: "",
-                      maritalStatus: "",
-                      jobRole: "",
-                      profilePhoto: null,
-                      profilePhotoURL: "",
-                      lessThan5Hours: "",
-                      hours12: "",
-                      hours24: "",
-                      qualification: "",
-                      certificate: null,
-                      certificateURL: "",
-                      experience: "",
-                      preferredShifts: [],
-                      languages: [],
-                      services: [],
-                      foodPreference: "",
-                      smoking: "",
-                      carryFood: "",
-                      additionalInfo: "",
-                      customerName: "",
-                      customerPhone: "",
-                      video: null, // Changed from recording
-                      aadharNumber: "",
-                      aadharFront: null,
-                      aadharBack: null,
-                      panNumber: "",
-                      panCard: null,
-                    });
-                  }}
-                >
-                  Register Another Staff
-                </Button>
+                <div className="flex space-x-4">
+                  {/* <Button
+                    onClick={() => {
+                      setIsSuccess(false);
+                      setPhoneNumber("");
+                      setUserId("");
+                      setIsUserCreated(false); // Reset user created state
+                      setFormData({
+                        fullName: "",
+                        gender: "",
+                        maritalStatus: "",
+                        jobRole: "",
+                        dateOfBirth: "", // New field
+                        religion: "", // New field
+                        profilePhoto: null,
+                        profilePhotoURL: "",
+                        lessThan5Hours: "",
+                        hours12: "",
+                        hours24: "",
+                        qualification: "",
+                        certificate: null,
+                        certificateURL: "",
+                        experience: "",
+                        preferredShifts: [],
+                        languages: [],
+                        services: {},
+                        foodPreference: "",
+                        smoking: "",
+                        carryFood: "",
+                        additionalInfo: "",
+                        customerName: "",
+                        customerPhone: "",
+                        video: null, // Changed from recording
+                        aadharNumber: "",
+                        aadharFront: null,
+                        aadharBack: null,
+                        panNumber: "",
+                        panCard: null,
+                        currentAddress: {
+                          // New field
+                          street: "",
+                          city: "",
+                          state: "",
+                          zip: "",
+                        },
+                        permanentAddress: {
+                          // New field
+                          street: "",
+                          city: "",
+                          state: "",
+                          zip: "",
+                        },
+                        isCurrentAddressSameAsPermanent: false, // New field
+                        isActive: false, // New field with default
+                        aadharVerified: false, // New field with default
+                        policeVerified: false, // New field with default
+                        bankDetails: {
+                          // New field
+                          accountName: "",
+                          accountNumber: "",
+                          ifscCode: "",
+                          bankName: "",
+                          bankBranch: "",
+                        },
+                        availability: [] as {
+                          startDate: string;
+                          endDate: string;
+                        }[], // New field
+                        providerId: "", // Reset new field
+                        district: [], // Reset new field
+                        subDistricts: [], // Reset new field
+                      });
+                    }}
+                  >
+                    Register Another Staff
+                  </Button> */}
+                  <Button
+                    onClick={() => {
+                      router.push("/staff");
+                    }}
+                  >
+                    Back to all Staff
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -487,17 +690,49 @@ const AddStaffPage = () => {
                   </CardHeader>
                   <CardContent>
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
-                      <TabsList className="grid grid-cols-4 mb-6">
-                        <TabsTrigger value="personal-info">
+                      <TabsList className="w-full flex flex-wrap gap-2 mb-6">
+                        <TabsTrigger
+                          value="personal-info"
+                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                        >
                           Personal Info
                         </TabsTrigger>
-                        <TabsTrigger value="professional">
+                        <TabsTrigger
+                          value="other-details"
+                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                        >
+                          Other Details
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="professional"
+                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                        >
                           Professional
                         </TabsTrigger>
-                        <TabsTrigger value="preferences">
+                        <TabsTrigger
+                          value="agency-location"
+                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                        >
+                          Agency & Location
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="preferences"
+                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                        >
                           Preferences
                         </TabsTrigger>
-                        <TabsTrigger value="documents">Documents</TabsTrigger>
+                        <TabsTrigger
+                          value="bank-details"
+                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                        >
+                          Bank Details
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="documents"
+                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                        >
+                          Documents
+                        </TabsTrigger>
                       </TabsList>
 
                       <TabsContent value="personal-info" className="space-y-6">
@@ -518,31 +753,6 @@ const AddStaffPage = () => {
                                 required
                               />
                             </div>
-
-                            {/* Profile Photo Input */}
-                            <div className="space-y-2">
-                              <Label htmlFor="profilePhoto">
-                                Profile Photo
-                              </Label>
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  id="profilePhoto"
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) =>
-                                    handleFileChange(e, "profilePhoto")
-                                  }
-                                  className="flex-1"
-                                />
-                                {formData.profilePhoto && (
-                                  <div className="text-sm text-green-600 flex items-center gap-1">
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    <span>Uploaded</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
                             <div className="space-y-2">
                               <Label htmlFor="gender">Gender</Label>
                               <Select
@@ -560,6 +770,42 @@ const AddStaffPage = () => {
                                   <SelectItem value="other">Other</SelectItem>
                                 </SelectContent>
                               </Select>
+                            </div>
+
+                            {/* Profile Photo Input */}
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="profilePhoto">
+                                Profile Photo
+                              </Label>
+                              <div className="flex items-center gap-4">
+                                {formData.profilePhoto && (
+                                  // Display preview of the selected image
+                                  <img
+                                    src={URL.createObjectURL(
+                                      formData.profilePhoto
+                                    )}
+                                    alt="Profile Preview"
+                                    className="w-24 h-24 object-cover rounded-md"
+                                  />
+                                )}
+                                <div className="flex-1 space-y-2">
+                                  <Input
+                                    id="profilePhoto"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) =>
+                                      handleFileChange(e, "profilePhoto")
+                                    }
+                                    className="flex-1"
+                                  />
+                                  {formData.profilePhoto && (
+                                    <div className="text-sm text-green-600 flex items-center gap-1">
+                                      <CheckCircle2 className="h-4 w-4" />
+                                      <span>Selected</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </div>
 
                             <div className="space-y-2">
@@ -671,6 +917,362 @@ const AddStaffPage = () => {
                         </div>
                       </TabsContent>
 
+                      {/* Other Details Tab */}
+                      <TabsContent value="other-details" className="space-y-6">
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">Other Details</h3>
+
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {/* Date of Birth */}
+                            <div className="space-y-2">
+                              <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                              <Input
+                                id="dateOfBirth"
+                                name="dateOfBirth"
+                                type="date"
+                                value={formData.dateOfBirth}
+                                onChange={handleInputChange}
+                              />
+                            </div>
+
+                            {/* Religion */}
+                            <div className="space-y-2">
+                              <Label htmlFor="religion">Religion</Label>
+                              <Select
+                                value={formData.religion}
+                                onValueChange={(value) =>
+                                  handleSelectChange("religion", value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select religion" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="hindu">Hindu</SelectItem>
+                                  <SelectItem value="muslim">Muslim</SelectItem>
+                                  <SelectItem value="christian">
+                                    Christian
+                                  </SelectItem>
+                                  <SelectItem value="sikh">Sikh</SelectItem>
+                                  <SelectItem value="buddhist">
+                                    Buddhist
+                                  </SelectItem>
+                                  <SelectItem value="jain">Jain</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          {/* Current Address */}
+                          <div className="space-y-4">
+                            <h4 className="text-md font-medium">
+                              Current Address
+                            </h4>
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="currentAddress.street">
+                                  Street
+                                </Label>
+                                <Input
+                                  id="currentAddress.street"
+                                  name="currentAddress.street"
+                                  placeholder="Street Address"
+                                  value={formData.currentAddress.street}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      currentAddress: {
+                                        ...prev.currentAddress,
+                                        street: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="currentAddress.city">
+                                  City
+                                </Label>
+                                <Input
+                                  id="currentAddress.city"
+                                  name="currentAddress.city"
+                                  placeholder="City"
+                                  value={formData.currentAddress.city}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      currentAddress: {
+                                        ...prev.currentAddress,
+                                        city: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="currentAddress.state">
+                                  State
+                                </Label>
+                                <Input
+                                  id="currentAddress.state"
+                                  name="currentAddress.state"
+                                  placeholder="State"
+                                  value={formData.currentAddress.state}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      currentAddress: {
+                                        ...prev.currentAddress,
+                                        state: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="currentAddress.zip">
+                                  Zip Code
+                                </Label>
+                                <Input
+                                  id="currentAddress.zip"
+                                  name="currentAddress.zip"
+                                  placeholder="Zip Code"
+                                  value={formData.currentAddress.zip}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      currentAddress: {
+                                        ...prev.currentAddress,
+                                        zip: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          {/* Permanent Address */}
+                          <div className="space-y-4">
+                            <div className="flex items-center space-x-2 mb-4">
+                              <Checkbox
+                                id="isCurrentAddressSameAsPermanent"
+                                checked={
+                                  formData.isCurrentAddressSameAsPermanent
+                                }
+                                onCheckedChange={(checked) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    isCurrentAddressSameAsPermanent:
+                                      checked as boolean,
+                                  }))
+                                }
+                              />
+                              <Label
+                                htmlFor="isCurrentAddressSameAsPermanent"
+                                className="font-normal"
+                              >
+                                Permanent Address is same as Current Address
+                              </Label>
+                            </div>
+
+                            {!formData.isCurrentAddressSameAsPermanent && (
+                              <>
+                                <h4 className="text-md font-medium">
+                                  Permanent Address
+                                </h4>
+                                <div className="grid gap-4 md:grid-cols-2">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="permanentAddress.street">
+                                      Street
+                                    </Label>
+                                    <Input
+                                      id="permanentAddress.street"
+                                      name="permanentAddress.street"
+                                      placeholder="Street Address"
+                                      value={formData.permanentAddress.street}
+                                      onChange={(e) =>
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          permanentAddress: {
+                                            ...prev.permanentAddress,
+                                            street: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="permanentAddress.city">
+                                      City
+                                    </Label>
+                                    <Input
+                                      id="permanentAddress.city"
+                                      name="permanentAddress.city"
+                                      placeholder="City"
+                                      value={formData.permanentAddress.city}
+                                      onChange={(e) =>
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          permanentAddress: {
+                                            ...prev.permanentAddress,
+                                            city: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="permanentAddress.state">
+                                      State
+                                    </Label>
+                                    <Input
+                                      id="permanentAddress.state"
+                                      name="permanentAddress.state"
+                                      placeholder="State"
+                                      value={formData.permanentAddress.state}
+                                      onChange={(e) =>
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          permanentAddress: {
+                                            ...prev.permanentAddress,
+                                            state: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="permanentAddress.zip">
+                                      Zip Code
+                                    </Label>
+                                    <Input
+                                      id="permanentAddress.zip"
+                                      name="permanentAddress.zip"
+                                      placeholder="Zip Code"
+                                      value={formData.permanentAddress.zip}
+                                      onChange={(e) =>
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          permanentAddress: {
+                                            ...prev.permanentAddress,
+                                            zip: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          <Separator />
+
+                          {/* Verification Status */}
+                          <div className="space-y-4">
+                            <h4 className="text-md font-medium">
+                              Verification Status
+                            </h4>
+                            <div className="grid gap-4 md:grid-cols-3">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="isActive"
+                                  checked={formData.isActive}
+                                  onCheckedChange={(checked) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      isActive: checked as boolean,
+                                    }))
+                                  }
+                                />
+                                <Label
+                                  htmlFor="isActive"
+                                  className="font-normal"
+                                >
+                                  Is Active
+                                </Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="aadharVerified"
+                                  checked={formData.aadharVerified}
+                                  onCheckedChange={(checked) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      aadharVerified: checked as boolean,
+                                    }))
+                                  }
+                                />
+                                <Label
+                                  htmlFor="aadharVerified"
+                                  className="font-normal"
+                                >
+                                  Aadhar Verified
+                                </Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="policeVerified"
+                                  checked={formData.policeVerified}
+                                  onCheckedChange={(checked) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      policeVerified: checked as boolean,
+                                    }))
+                                  }
+                                />
+                                <Label
+                                  htmlFor="policeVerified"
+                                  className="font-normal"
+                                >
+                                  Police Verified
+                                </Label>
+                              </div>
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          {/* Availability */}
+                          {/* <div className="space-y-2">
+                            <Label htmlFor="availability">
+                              Availability (Format: [[start,end],[start,end]])
+                            </Label>
+                            <Textarea
+                              id="availability"
+                              name="availability"
+                              placeholder="Enter availability date ranges"
+                              value={JSON.stringify(formData.availability)} // Display as string for now
+                              onChange={(e) => {
+                                try {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    availability: JSON.parse(e.target.value),
+                                  }));
+                                } catch (error) {
+                                  console.error(
+                                    "Invalid availability format",
+                                    error
+                                  );
+                                  // Optionally show a toast error
+                                }
+                              }}
+                              rows={4}
+                            />
+                            <p className="text-sm text-muted-foreground">
+                              Enter as an array of date pairs, e.g.,
+                              `[["12/05/2025","17/05/2024"],["24/05/2025","29/05/2024"]]`
+                            </p>
+                          </div> */}
+                        </div>
+                      </TabsContent>
+
                       <TabsContent value="professional" className="space-y-6">
                         <div className="space-y-4">
                           <h3 className="text-lg font-medium">
@@ -692,6 +1294,9 @@ const AddStaffPage = () => {
                                   <SelectValue placeholder="Select qualification" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                  <SelectItem value="below-10th">
+                                    Below 10th
+                                  </SelectItem>
                                   <SelectItem value="10th">
                                     10th Pass
                                   </SelectItem>
@@ -704,25 +1309,36 @@ const AddStaffPage = () => {
                                   <SelectItem value="graduate">
                                     Graduate
                                   </SelectItem>
-                                  <SelectItem value="postgraduate">
-                                    Post Graduate
-                                  </SelectItem>
+                                  <SelectItem value="anm">ANM</SelectItem>
+                                  <SelectItem value="gnm">GNM</SelectItem>
+                                  <SelectItem value="bsc">BSC</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
 
                             <div className="space-y-2">
-                              <Label htmlFor="experience">
-                                Experience (years)
-                              </Label>
-                              <Input
-                                id="experience"
-                                name="experience"
-                                type="number"
-                                placeholder="Years of experience"
+                              <Label htmlFor="experience">Experience</Label>
+                              <Select
                                 value={formData.experience}
-                                onChange={handleInputChange}
-                              />
+                                onValueChange={(value) =>
+                                  handleSelectChange("experience", value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select experience" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="less-than-1">
+                                    Less than 1 Year
+                                  </SelectItem>
+                                  <SelectItem value="1-2">1-2 Years</SelectItem>
+                                  <SelectItem value="2-5">2-5 Years</SelectItem>
+                                  <SelectItem value="5-10">
+                                    5-10 Years
+                                  </SelectItem>
+                                  <SelectItem value="10+">10+ Years</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
 
                             <div className="space-y-2">
@@ -761,12 +1377,13 @@ const AddStaffPage = () => {
                             <Label>Preferred Shifts</Label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                               {[
-                                "Morning",
-                                "Afternoon",
-                                "Evening",
-                                "Night",
-                                "12 Hours",
+                                "Morning (6AM-2PM)",
+                                "Afternoon (2PM-10PM)",
+                                "Night (10PM-6AM)",
+                                "Full Day (9AM-6PM)",
                                 "24 Hours",
+                                "Part Time",
+                                "Flexible Hours",
                               ].map((shift) => (
                                 <div
                                   key={shift}
@@ -845,45 +1462,237 @@ const AddStaffPage = () => {
                               ))}
                             </div>
                           </div>
+                          <Separator />
 
-                          <div className="space-y-3">
-                            <Label>Additional Services</Label>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                              {[
-                                "Cooking",
-                                "Cleaning",
-                                "Bathing",
-                                "Medication",
-                                "Vital Monitoring",
-                                "Wound Care",
-                                "Mobility Assistance",
-                              ].map((service) => (
-                                <div
-                                  key={service}
-                                  className="flex items-center space-x-2"
-                                >
+                          <div className="space-y-3 text-lg font-medium">
+                            <Label className="text-lg font-medium">
+                              Additional Services
+                            </Label>
+                            {Object.entries(SERVICES).map(
+                              ([category, services]) => (
+                                <div key={category} className="space-y-2">
+                                  <h4 className="text-sm font-medium">
+                                    {category}
+                                  </h4>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    {services.map((service) => (
+                                      <div
+                                        key={service}
+                                        className="flex items-center space-x-2"
+                                      >
+                                        <Checkbox
+                                          id={`service-${service}`}
+                                          checked={
+                                            formData.services[
+                                              category
+                                            ]?.includes(
+                                              service.toLowerCase()
+                                            ) || false
+                                          }
+                                          onCheckedChange={(checked) =>
+                                            handleCheckboxChange(
+                                              category,
+                                              service.toLowerCase(),
+                                              checked as boolean
+                                            )
+                                          }
+                                        />
+                                        <Label
+                                          htmlFor={`service-${service}`}
+                                          className="font-normal"
+                                        >
+                                          {service}
+                                        </Label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent
+                        value="agency-location"
+                        className="space-y-6"
+                      >
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">
+                            Provider Agency & Location
+                          </h3>
+
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {/* Provider Agency */}
+                            <div className="space-y-2">
+                              <Label htmlFor="providerAgency">
+                                Provider Agency
+                              </Label>
+                              <Select
+                                value={formData.providerId}
+                                onValueChange={(value) =>
+                                  handleSelectChange("providerId", value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select agency" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="zense">Zense</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Districts */}
+                            <div className="space-y-3">
+                              <Label>Districts to Serve</Label>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {DISTRICTS.map((district) => (
+                                  <div
+                                    key={district}
+                                    className="flex items-center space-x-2"
+                                  >
+                                    <Checkbox
+                                      id={`district-${district}`}
+                                      checked={formData.district.includes(
+                                        district.toLowerCase()
+                                      )}
+                                      onCheckedChange={(checked) =>
+                                        handleCheckboxChange(
+                                          "district",
+                                          district.toLowerCase(),
+                                          checked as boolean
+                                        )
+                                      }
+                                    />
+                                    <Label
+                                      htmlFor={`district-${district}`}
+                                      className="font-normal"
+                                    >
+                                      {district}
+                                    </Label>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Subdistricts */}
+                            {/* Sub-districts based on selected districts */}
+                            {formData.district.length > 0 && (
+                              <div className="space-y-3 md:col-span-2">
+                                <Label>Subdistricts to Serve</Label>
+                                <div className="flex items-center space-x-2 mb-2">
                                   <Checkbox
-                                    id={`service-${service}`}
-                                    checked={formData.services.includes(
-                                      service.toLowerCase()
-                                    )}
-                                    onCheckedChange={(checked) =>
-                                      handleCheckboxChange(
-                                        "services",
-                                        service.toLowerCase(),
-                                        checked as boolean
-                                      )
+                                    id="all-subdistricts"
+                                    checked={
+                                      formData.district.length > 0 &&
+                                      formData.subDistricts.length ===
+                                        formData.district.reduce(
+                                          (acc, district) => {
+                                            const normalizedDistrict =
+                                              district.toLowerCase() as District;
+                                            return (
+                                              acc +
+                                              (SUB_DISTRICTS[normalizedDistrict]
+                                                ?.length || 0)
+                                            );
+                                          },
+                                          0
+                                        )
                                     }
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        // Select all subdistricts from selected districts
+                                        const allSubdistricts: string[] = [];
+                                        formData.district.forEach(
+                                          (district) => {
+                                            const normalizedDistrict =
+                                              district.toLowerCase() as District;
+                                            if (
+                                              SUB_DISTRICTS[normalizedDistrict]
+                                            ) {
+                                              SUB_DISTRICTS[
+                                                normalizedDistrict
+                                              ].forEach((subdistrict) => {
+                                                allSubdistricts.push(
+                                                  subdistrict.toLowerCase()
+                                                );
+                                              });
+                                            }
+                                          }
+                                        );
+
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          subDistricts: allSubdistricts,
+                                        }));
+                                      } else {
+                                        // Deselect all subdistricts
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          subDistricts: [],
+                                        }));
+                                      }
+                                    }}
                                   />
                                   <Label
-                                    htmlFor={`service-${service}`}
+                                    htmlFor="all-subdistricts"
                                     className="font-normal"
                                   >
-                                    {service}
+                                    Select All Subdistricts
                                   </Label>
                                 </div>
-                              ))}
-                            </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                  {formData.district.map((district) => {
+                                    const normalizedDistrict =
+                                      district.toLowerCase() as District;
+                                    return SUB_DISTRICTS[
+                                      normalizedDistrict
+                                    ]?.map((subdistrict) => (
+                                      <div
+                                        key={subdistrict}
+                                        className="flex items-center space-x-2"
+                                      >
+                                        <Checkbox
+                                          id={`subdistrict-${subdistrict}`}
+                                          checked={formData.subDistricts.includes(
+                                            subdistrict.toLowerCase()
+                                          )}
+                                          onCheckedChange={(checked) => {
+                                            if (checked) {
+                                              setFormData((prev) => ({
+                                                ...prev,
+                                                subDistricts: [
+                                                  ...prev.subDistricts,
+                                                  subdistrict.toLowerCase(),
+                                                ],
+                                              }));
+                                            } else {
+                                              setFormData((prev) => ({
+                                                ...prev,
+                                                subDistricts:
+                                                  prev.subDistricts.filter(
+                                                    (item) =>
+                                                      item !==
+                                                      subdistrict.toLowerCase()
+                                                  ),
+                                              }));
+                                            }
+                                          }}
+                                        />
+                                        <Label
+                                          htmlFor={`subdistrict-${subdistrict}`}
+                                          className="font-normal"
+                                        >
+                                          {subdistrict}
+                                        </Label>
+                                      </div>
+                                    ));
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </TabsContent>
@@ -909,15 +1718,11 @@ const AddStaffPage = () => {
                                   <SelectValue placeholder="Select food preference" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="vegetarian">
-                                    Vegetarian
+                                  <SelectItem value="veg">Veg</SelectItem>
+                                  <SelectItem value="non-veg">
+                                    Non-Veg
                                   </SelectItem>
-                                  <SelectItem value="non-vegetarian">
-                                    Non-Vegetarian
-                                  </SelectItem>
-                                  <SelectItem value="eggetarian">
-                                    Eggetarian
-                                  </SelectItem>
+                                  <SelectItem value="both">Both</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1061,6 +1866,115 @@ const AddStaffPage = () => {
                         </div>
                       </TabsContent>
 
+                      {/* Bank Details Tab */}
+                      <TabsContent value="bank-details" className="space-y-6">
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">Bank Details</h3>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label htmlFor="bankDetails.accountName">
+                                Account Name
+                              </Label>
+                              <Input
+                                id="bankDetails.accountName"
+                                name="bankDetails.accountName"
+                                placeholder="Name on Account"
+                                value={formData.bankDetails.accountName}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    bankDetails: {
+                                      ...prev.bankDetails,
+                                      accountName: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="bankDetails.accountNumber">
+                                Account Number
+                              </Label>
+                              <Input
+                                id="bankDetails.accountNumber"
+                                name="bankDetails.accountNumber"
+                                placeholder="Account Number"
+                                value={formData.bankDetails.accountNumber}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    bankDetails: {
+                                      ...prev.bankDetails,
+                                      accountNumber: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="bankDetails.ifscCode">
+                                IFSC Code
+                              </Label>
+                              <Input
+                                id="bankDetails.ifscCode"
+                                name="bankDetails.ifscCode"
+                                placeholder="IFSC Code"
+                                value={formData.bankDetails.ifscCode}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    bankDetails: {
+                                      ...prev.bankDetails,
+                                      ifscCode: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="bankDetails.bankName">
+                                Bank Name
+                              </Label>
+                              <Input
+                                id="bankDetails.bankName"
+                                name="bankDetails.bankName"
+                                placeholder="Bank Name"
+                                value={formData.bankDetails.bankName}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    bankDetails: {
+                                      ...prev.bankDetails,
+                                      bankName: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="bankDetails.bankBranch">
+                                Bank Branch
+                              </Label>
+                              <Input
+                                id="bankDetails.bankBranch"
+                                name="bankDetails.bankBranch"
+                                placeholder="Bank Branch"
+                                value={formData.bankDetails.bankBranch}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    bankDetails: {
+                                      ...prev.bankDetails,
+                                      bankBranch: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+
                       <TabsContent value="documents" className="space-y-6">
                         <div className="space-y-4">
                           <h3 className="text-lg font-medium">
@@ -1176,8 +2090,11 @@ const AddStaffPage = () => {
                       onClick={() => {
                         const tabs = [
                           "personal-info",
+                          "other-details",
                           "professional",
+                          "agency-location",
                           "preferences",
+                          "bank-details",
                           "documents",
                         ];
                         const currentIndex = tabs.indexOf(activeTab);
@@ -1196,8 +2113,11 @@ const AddStaffPage = () => {
                         onClick={() => {
                           const tabs = [
                             "personal-info",
+                            "other-details",
                             "professional",
+                            "agency-location",
                             "preferences",
+                            "bank-details",
                             "documents",
                           ];
                           const currentIndex = tabs.indexOf(activeTab);
@@ -1210,11 +2130,15 @@ const AddStaffPage = () => {
                       </Button>
                     )}
 
-                    {activeTab === "documents" && (
-                      <Button type="submit" disabled={isSubmitting}>
+                    <div className="fixed bottom-4 right-4 z-50">
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="shadow-lg"
+                      >
                         {isSubmitting ? "Submitting..." : "Register Staff"}
                       </Button>
-                    )}
+                    </div>
                   </CardFooter>
                 </Card>
               </form>
@@ -1227,9 +2151,3 @@ const AddStaffPage = () => {
 };
 
 export default AddStaffPage;
-
-// {/* <div>
-//   <h1 className="text-3xl font-bold">Add New Staff</h1>
-//   {/* Add your form for adding staff here */}
-//   <p>Form to add new staff will go here.</p>
-// </div> */}

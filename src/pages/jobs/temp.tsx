@@ -22,19 +22,12 @@ import {
   OrderEntry,
 } from "@/types/jobs";
 import { Staff } from "@/types"; // Assuming Staff type is still needed for assignment
-import {
-  doc,
-  getDoc,
-  updateDoc,
-  collection,
-  getDocs,
-} from "firebase/firestore"; // Added collection and getDocs
+import { collection, addDoc, getDocs } from "firebase/firestore"; // Added getDocs for fetching staff
 import { db } from "@/lib/firebase/firestore";
 import { useAuth } from "@/components/auth/AuthContext";
-import LoadingSpinner from "@/components/common/LoadingSpinner";
 import AssignStaffDialog from "@/components/dashboard/AssignStaffDialog"; // Import AssignStaffDialog
 import { UserPlus } from "lucide-react"; // Import UserPlus icon
-import { format } from "date-fns"; // Import format for date handling
+import { number } from "zod";
 
 interface FormData {
   jobType?: string;
@@ -71,114 +64,43 @@ const predefinedRequirements = [
   "Has own transportation",
 ];
 
-const EditJobPage = () => {
+const AddJobPage = () => {
   const router = useRouter();
-  const { id } = router.query;
   const { user } = useAuth();
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<Job2>({
+    id: "",
+
+    jobType: "",
+    serviceType: "",
+    serviceShift: "",
+    jobDuration: 0,
+    startDate: "",
+    endDate: "",
+    signUpDate: "",
+    description: "",
+    requirements: [],
+    notes: "",
+    status: "pending",
+    pricePerHour: 0,
     patientInfo: {},
     guardianInfo: {},
     acquisitionInfo: {},
     paymentInfo: {},
     staffInfo: {},
-    startDate: "", // Initialize top-level date fields as empty strings
-    endDate: "",
-    signUpDate: "",
+    medicineOrders: [],
+    diagnosticOrders: [],
+    otherOrders: [],
   });
-  const [loading, setLoading] = useState(true);
-  const [job, setJob] = useState<Job2 | null>(null); // Use Job2 type
+  const [loading, setLoading] = useState(false);
   const [staffList, setStaffList] = useState<Staff[]>([]); // State for staff list
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false); // State for assign dialog
   const [jobToAssign, setJobToAssign] = useState<Job2 | null>(null); // State for job to assign
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({}); // State for form errors
 
+  // Fetch staff list
   useEffect(() => {
-    const fetchData = async () => {
-      if (!id || !user) return;
-
+    const fetchStaff = async () => {
       try {
-        // Fetch job data
-        const jobDocRef = doc(db, "jobs", id as string);
-        const jobDocSnap = await getDoc(jobDocRef);
-
-        if (jobDocSnap.exists()) {
-          const jobData = jobDocSnap.data() as any; // Cast to any to access Timestamp
-          setJob(jobData as Job2); // Cast to Job2 for state
-
-          // Populate form data, converting Timestamps to strings for inputs
-          setFormData({
-            jobType: jobData.jobType ?? undefined,
-            serviceType: jobData.serviceType ?? undefined,
-            serviceShift: jobData.serviceShift ?? undefined,
-            jobDuration: jobData.jobDuration ?? undefined,
-            startDate: jobData?.startDate?.toDate
-              ? format(jobData.startDate.toDate(), "yyyy-MM-dd")
-              : "",
-            endDate: jobData?.endDate?.toDate
-              ? format(jobData.endDate.toDate(), "yyyy-MM-dd")
-              : "",
-            signUpDate: jobData?.signUpDate?.toDate
-              ? format(jobData.signUpDate.toDate(), "yyyy-MM-dd")
-              : "",
-            description: jobData.description ?? undefined,
-            requirements: Array.isArray(jobData?.requirements)
-              ? jobData?.requirements?.join(", ")
-              : jobData?.requirements,
-            notes: jobData?.notes ?? undefined,
-            status: jobData?.status ?? undefined,
-            pricePerHour: jobData?.pricePerHour ?? undefined,
-
-            patientInfo: jobData?.patientInfo ?? {},
-            guardianInfo: jobData?.guardianInfo ?? {},
-            acquisitionInfo: jobData?.acquisitionInfo ?? {},
-            paymentInfo: {
-              ...jobData?.paymentInfo,
-              paymentDate: jobData?.paymentInfo?.paymentDate?.toDate
-                ? format(jobData.paymentInfo.paymentDate.toDate(), "yyyy-MM-dd")
-                : "",
-              refundDate: jobData?.paymentInfo?.refundDate?.toDate
-                ? format(jobData.paymentInfo.refundDate.toDate(), "yyyy-MM-dd")
-                : "",
-            },
-            staffInfo: jobData?.staffInfo ?? {},
-
-            medicineOrders:
-              jobData?.medicineOrders?.map((order: any) => ({
-                ...order,
-                orderDate: order?.orderDate?.toDate
-                  ? format(order.orderDate.toDate(), "yyyy-MM-dd")
-                  : "",
-                paymentDate: order?.paymentDate?.toDate
-                  ? format(order.paymentDate.toDate(), "yyyy-MM-dd")
-                  : "",
-              })) ?? [],
-            diagnosticOrders:
-              jobData?.diagnosticOrders?.map((order: any) => ({
-                ...order,
-                orderDate: order?.orderDate?.toDate
-                  ? format(order.orderDate.toDate(), "yyyy-MM-dd")
-                  : "",
-                paymentDate: order?.paymentDate?.toDate
-                  ? format(order.paymentDate.toDate(), "yyyy-MM-dd")
-                  : "",
-              })) ?? [],
-            otherOrders:
-              jobData?.otherOrders?.map((order: any) => ({
-                ...order,
-                orderDate: order?.orderDate?.toDate
-                  ? format(order.orderDate.toDate(), "yyyy-MM-dd")
-                  : "",
-                paymentDate: order?.paymentDate?.toDate
-                  ? format(order.paymentDate.toDate(), "yyyy-MM-dd")
-                  : "",
-              })) ?? [],
-          });
-        } else {
-          console.error("No such job document!");
-          router.push("/jobs"); // Redirect if job not found
-        }
-
-        // Fetch staff list
         const staffCollection = collection(db, "users");
         const staffSnapshot = await getDocs(staffCollection);
         const staffData = staffSnapshot.docs.map(
@@ -186,30 +108,42 @@ const EditJobPage = () => {
         );
         setStaffList(staffData);
       } catch (error) {
-        console.error("Error fetching data:", error);
-        router.push("/jobs"); // Redirect on error
-      } finally {
-        setLoading(false);
+        console.error("Error fetching staff:", error);
       }
     };
-
-    fetchData();
-  }, [id, user, router]);
+    fetchStaff();
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    // Handle nested fields
+    // Handle nested fields (including arrays of objects)
     if (name.includes(".")) {
-      const [parent, child] = name.split(".");
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: {
-          ...(prev[parent as keyof FormData] as object),
-          [child]: value,
-        },
-      }));
+      const [parent, rest] = name.split(".");
+      if (rest.includes(".")) {
+        // Handle nested objects within arrays (e.g., medicineOrders.0.orderValue)
+        const [index, child] = rest.split(".");
+        setFormData((prev) => {
+          const parentArray = [
+            ...((prev[parent as keyof Job2] as any[]) ?? []),
+          ];
+          parentArray[Number(index)] = {
+            ...(parentArray[Number(index)] as object),
+            [child]: value,
+          };
+          return { ...prev, [parent]: parentArray };
+        });
+      } else {
+        // Handle nested objects (e.g., patientInfo.name)
+        setFormData((prev) => ({
+          ...prev,
+          [parent]: {
+            ...(prev[parent as keyof Job2] as object),
+            [rest]: value,
+          },
+        }));
+      }
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -222,7 +156,7 @@ const EditJobPage = () => {
       setFormData((prev) => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof FormData] as object),
+          ...(prev[parent as keyof Job2] as object),
           [child]: value,
         },
       }));
@@ -231,8 +165,9 @@ const EditJobPage = () => {
     }
   };
 
-  const handleAssignStaffClick = (job: Job2) => {
-    setJobToAssign(job);
+  const handleAssignStaffClick = () => {
+    // For the add job page, we don't have a job ID yet.
+    // We just need to open the dialog to select a staff member.
     setIsAssignDialogOpen(true);
   };
 
@@ -249,20 +184,37 @@ const EditJobPage = () => {
       },
     }));
     setIsAssignDialogOpen(false);
-    setJobToAssign(null);
+    setJobToAssign(null); // jobToAssign remains null as we are adding a new job
   };
 
-  // Helper function to get Date value from string
-  const getDateValue = (value: string | undefined) => {
-    if (!value) return undefined;
-    const date = new Date(value);
-    return isNaN(date.getTime()) ? undefined : date;
+  // Helper functions for managing order arrays
+  const addOrderEntry = (
+    category: "medicineOrders" | "diagnosticOrders" | "otherOrders"
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      [category]: [
+        ...(prev[category] ?? []),
+        { orderValue: 0, orderDate: "", paymentDate: "", paymentAmount: 0 },
+      ], // Add a new empty order entry
+    }));
+  };
+
+  const removeOrderEntry = (
+    category: "medicineOrders" | "diagnosticOrders" | "otherOrders",
+    index: number
+  ) => {
+    setFormData((prev) => {
+      const orders = [...(prev[category] ?? [])];
+      orders.splice(index, 1);
+      return { ...prev, [category]: orders };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user || !user.uid || !id) {
-      console.error("User not logged in or job ID is missing");
+    if (!user || !user.uid) {
+      console.error("User not logged in");
       return;
     }
 
@@ -292,7 +244,6 @@ const EditJobPage = () => {
     setLoading(true);
     try {
       // Helper function to get string value with default
-
       const getStringValue = (value: string | undefined) => value ?? "";
       // Helper function to get number value with default
       const getNumberValue = (
@@ -312,7 +263,9 @@ const EditJobPage = () => {
         return isNaN(date.getTime()) ? undefined : date;
       };
 
-      const updatedJobData: Partial<Job2> = {
+      const newJob: any = {
+        id: "", // Firestore will generate this
+
         // Map formData to Job2 structure with default values and date conversions
         jobType: getStringValue(formData.jobType),
         serviceType: getStringValue(formData.serviceType),
@@ -322,9 +275,7 @@ const EditJobPage = () => {
         endDate: getDateFromString(formData.endDate)!, // Use non-null assertion after validation
         signUpDate: getDateFromString(formData.signUpDate),
         description: getStringValue(formData.description),
-        requirements: formData.requirements
-          ? formData.requirements.split(",").map((req) => req.trim())
-          : [], // Use the array directly
+        requirements: formData.requirements ?? [], // Use the array directly
         notes: getStringValue(formData.notes),
         status: getStringValue(formData.status) || "pending", // Default status
         pricePerHour: getNumberValue(formData.pricePerHour) || 0,
@@ -333,15 +284,15 @@ const EditJobPage = () => {
 
         // Handle nested objects with default values for mandatory fields
         patientInfo: {
-          name: getStringValue(formData.patientInfo?.name) || "",
+          name: getStringValue(formData.patientInfo?.name),
           age: getNumberValue(formData.patientInfo?.age) || 0, // Provide a default age
-          gender: getStringValue(formData.patientInfo?.gender) || "",
+          gender: getStringValue(formData.patientInfo?.gender),
           address: getStringValue(formData.patientInfo?.address),
           city: getStringValue(formData.patientInfo?.city),
           state: getStringValue(formData.patientInfo?.state),
           pincode: getStringValue(formData.patientInfo?.pincode),
           mobile: getStringValue(formData.patientInfo?.mobile),
-          patientId: getStringValue(formData.patientInfo?.patientId) || "",
+          patientId: getStringValue(formData.patientInfo?.patientId),
         },
         guardianInfo: {
           name: getStringValue(formData.guardianInfo?.name),
@@ -367,19 +318,17 @@ const EditJobPage = () => {
           paymentAmount:
             getNumberValue(formData.paymentInfo?.paymentAmount) || 0, // Provide a default age,
           refundAmount: getNumberValue(formData.paymentInfo?.refundAmount) || 0, // Provide a default age,
-          paymentDate:
-            getDateFromString(
-              formData?.paymentInfo?.paymentDate instanceof Date
-                ? formData.paymentInfo.paymentDate.toISOString().split("T")[0]
-                : formData?.paymentInfo?.paymentDate
-            ) || "",
-          refundDate:
-            getDateFromString(
-              formData?.paymentInfo?.refundDate instanceof Date
-                ? formData.paymentInfo.refundDate.toISOString().split("T")[0]
-                : formData?.paymentInfo?.refundDate
-            ) || "",
-        },
+          paymentDate: getDateFromString(
+            formData?.paymentInfo?.paymentDate instanceof Date
+              ? formData.paymentInfo.paymentDate.toISOString().split("T")[0]
+              : formData?.paymentInfo?.paymentDate
+          ),
+          refundDate: getDateFromString(
+            formData?.paymentInfo?.refundDate instanceof Date
+              ? formData.paymentInfo.refundDate.toISOString().split("T")[0]
+              : formData?.paymentInfo?.refundDate
+          ),
+        } as Partial<PaymentInfo>,
         staffInfo: {
           staffId: getStringValue(formData.staffInfo?.staffId),
           staffName: getStringValue(formData.staffInfo?.staffName),
@@ -392,8 +341,8 @@ const EditJobPage = () => {
             const convertedOrder: Partial<OrderEntry> = {
               orderValue: order.orderValue,
               paymentAmount: order.paymentAmount || 0, // Provide a default age
-              orderDate: getDateFromString(order.orderDate) || "",
-              paymentDate: getDateFromString(order.paymentDate) || "",
+              orderDate: getDateFromString(order.orderDate),
+              paymentDate: getDateFromString(order.paymentDate),
             };
             return convertedOrder;
           }) ?? [],
@@ -402,8 +351,8 @@ const EditJobPage = () => {
             const convertedOrder: Partial<OrderEntry> = {
               orderValue: order.orderValue,
               paymentAmount: order.paymentAmount || 0, // Provide a default age
-              orderDate: getDateFromString(order.orderDate) || "",
-              paymentDate: getDateFromString(order.paymentDate) || "",
+              orderDate: getDateFromString(order.orderDate),
+              paymentDate: getDateFromString(order.paymentDate),
             };
             return convertedOrder;
           }) ?? [],
@@ -412,43 +361,33 @@ const EditJobPage = () => {
             const convertedOrder: Partial<OrderEntry> = {
               orderValue: order.orderValue || 0,
               paymentAmount: order.paymentAmount || 0,
-              orderDate: getDateFromString(order.orderDate) || "", // Default to current date if undefined
+              orderDate: getDateFromString(order.orderDate),
               paymentDate: order.paymentDate
                 ? getDateFromString(order.paymentDate)
-                : "", // Default to current date if undefined
+                : new Date(), // Default to current date if undefined
             };
             return convertedOrder;
           }) ?? [],
       };
 
-      const jobDocRef = doc(db, "jobs", id as string);
-      await updateDoc(jobDocRef, updatedJobData);
+      // Add the document without specifying an ID
+      await addDoc(collection(db, "jobs"), newJob);
+      console.log("Document added with ID: ", newJob.id);
       router.push("/jobs");
     } catch (error) {
-      console.error("Error updating job:", error);
+      console.error("Error adding job:", error);
       setLoading(false);
     }
+    setLoading(false);
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (!job) {
-    return <div>Job not found.</div>; // Or handle the case where job is null after loading
-  }
 
   return (
     <Layout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Edit Job</h1>
+          <h1 className="text-3xl font-bold">Add New Job</h1>
           <p className="text-gray-500 mt-1">
-            Edit the details of the job request
+            Fill in the details to create a new job request
           </p>
         </div>
 
@@ -467,8 +406,8 @@ const EditJobPage = () => {
                   <SelectValue placeholder="Select Job Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="attendant">Attendant</SelectItem>
-                  <SelectItem value="nurse">Nurse</SelectItem>
+                  <SelectItem value="Attendant">Attendant</SelectItem>
+                  <SelectItem value="Nurse">Nurse</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -527,8 +466,13 @@ const EditJobPage = () => {
                 id="startDate"
                 name="startDate"
                 type="date"
-                value={formData.startDate ?? ""}
+                value={
+                  formData.startDate instanceof Date
+                    ? formData.startDate.toISOString()
+                    : formData.startDate ?? ""
+                }
                 onChange={handleChange}
+                required
               />
             </div>
             <div>
@@ -539,8 +483,13 @@ const EditJobPage = () => {
                 id="endDate"
                 name="endDate"
                 type="date"
-                value={formData.endDate ?? ""}
+                value={
+                  formData.endDate instanceof Date
+                    ? formData.endDate.toISOString()
+                    : formData.endDate ?? ""
+                }
                 onChange={handleChange}
+                required
               />
             </div>
             <div>
@@ -549,7 +498,11 @@ const EditJobPage = () => {
                 id="signUpDate"
                 name="signUpDate"
                 type="date"
-                value={formData.signUpDate ?? ""}
+                value={
+                  formData.signUpDate instanceof Date
+                    ? formData.signUpDate.toISOString()
+                    : formData.signUpDate ?? ""
+                }
                 onChange={handleChange}
               />
             </div>
@@ -559,38 +512,12 @@ const EditJobPage = () => {
                 id="pricePerHour"
                 name="pricePerHour"
                 type="number"
-                value={formData.pricePerHour ?? ""}
+                value={formData.pricePerHour ?? 0}
                 onChange={handleChange}
               />
             </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select
-                onValueChange={(value) => handleSelectChange("status", value)}
-                value={formData.status ?? ""}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="assigned">Assigned</SelectItem>
-                  <SelectItem value="ongoing">Ongoing</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={formData.description ?? ""}
-              onChange={handleChange}
-            />
+            {/* // Removed the status field as it's not needed and set the default
+            to "pending" in the formData initialization */}
           </div>
 
           <div>
@@ -598,34 +525,30 @@ const EditJobPage = () => {
             <div className="space-y-4">
               {/* Show currently selected requirements with remove option */}
               <div className="flex flex-wrap gap-2 mt-1">
-                {formData.requirements
-                  ? formData.requirements.split(",").map(
-                      (req, index) =>
-                        req.trim() && (
-                          <div
-                            key={index}
-                            className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center text-sm"
-                          >
-                            <span>{req.trim()}</span>
-                            <button
-                              type="button"
-                              className="ml-2 text-blue-600 hover:text-blue-800"
-                              onClick={() => {
-                                const requirements =
-                                  formData.requirements?.split(",") || [];
-                                requirements.splice(index, 1);
-                                setFormData({
-                                  ...formData,
-                                  requirements: requirements.join(", "),
-                                });
-                              }}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        )
-                    )
-                  : null}
+                {formData.requirements?.map((req, index) => (
+                  <div
+                    key={index}
+                    className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center text-sm"
+                  >
+                    <span>{req}</span>
+                    <button
+                      type="button"
+                      className="ml-2 text-blue-600 hover:text-blue-800"
+                      onClick={() => {
+                        const updatedRequirements = [
+                          ...(formData.requirements ?? []),
+                        ];
+                        updatedRequirements.splice(index, 1);
+                        setFormData({
+                          ...formData,
+                          requirements: updatedRequirements,
+                        });
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
               </div>
 
               {/* Predefined requirements selection */}
@@ -640,18 +563,12 @@ const EditJobPage = () => {
                       type="button"
                       className="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-sm"
                       onClick={() => {
-                        const currentReqs = formData.requirements
-                          ? formData.requirements
-                              .split(",")
-                              .map((r) => r.trim())
-                              .filter(Boolean)
-                          : [];
+                        const currentReqs = formData.requirements ?? [];
 
                         if (!currentReqs.includes(req)) {
-                          const newReqs = [...currentReqs, req].join(", ");
                           setFormData({
                             ...formData,
-                            requirements: newReqs,
+                            requirements: [...currentReqs, req],
                           });
                         }
                       }}
@@ -672,18 +589,12 @@ const EditJobPage = () => {
                     if (e.key === "Enter" && e.currentTarget.value.trim()) {
                       e.preventDefault();
                       const newReq = e.currentTarget.value.trim();
-                      const currentReqs = formData.requirements
-                        ? formData.requirements
-                            .split(",")
-                            .map((r) => r.trim())
-                            .filter(Boolean)
-                        : [];
+                      const currentReqs = formData.requirements ?? [];
 
                       if (!currentReqs.includes(newReq)) {
-                        const newReqs = [...currentReqs, newReq].join(", ");
                         setFormData({
                           ...formData,
-                          requirements: newReqs,
+                          requirements: [...currentReqs, newReq],
                         });
                         e.currentTarget.value = "";
                       }
@@ -699,18 +610,12 @@ const EditJobPage = () => {
                     ) as HTMLInputElement;
                     if (input && input.value.trim()) {
                       const newReq = input.value.trim();
-                      const currentReqs = formData.requirements
-                        ? formData.requirements
-                            .split(",")
-                            .map((r) => r.trim())
-                            .filter(Boolean)
-                        : [];
+                      const currentReqs = formData.requirements ?? [];
 
                       if (!currentReqs.includes(newReq)) {
-                        const newReqs = [...currentReqs, newReq].join(", ");
                         setFormData({
                           ...formData,
-                          requirements: newReqs,
+                          requirements: [...currentReqs, newReq],
                         });
                         input.value = "";
                       }
@@ -721,6 +626,16 @@ const EditJobPage = () => {
                 </Button>
               </div>
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description ?? ""}
+              onChange={handleChange}
+            />
           </div>
 
           <div>
@@ -771,7 +686,6 @@ const EditJobPage = () => {
                     handleSelectChange("patientInfo.gender", value)
                   }
                   value={formData.patientInfo?.gender ?? ""}
-                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select Gender" />
@@ -838,6 +752,7 @@ const EditJobPage = () => {
                   </SelectContent>
                 </Select>
               </div>
+
               <div>
                 <Label htmlFor="patientInfo.pincode">
                   Pincode<span className="text-red-500 ml-1">*</span>
@@ -1000,11 +915,11 @@ const EditJobPage = () => {
                   name="paymentInfo.paymentDate"
                   type="date"
                   value={
-                    formData.paymentInfo?.paymentDate instanceof Date
-                      ? formData.paymentInfo.paymentDate
+                    formData?.paymentInfo?.paymentDate instanceof Date
+                      ? formData?.paymentInfo?.paymentDate
                           .toISOString()
                           .split("T")[0]
-                      : formData.paymentInfo?.paymentDate ?? ""
+                      : formData?.paymentInfo?.paymentDate ?? ""
                   }
                   onChange={handleChange}
                 />
@@ -1017,7 +932,7 @@ const EditJobPage = () => {
                   id="paymentInfo.paymentAmount"
                   name="paymentInfo.paymentAmount"
                   type="number"
-                  value={formData.paymentInfo?.paymentAmount ?? ""}
+                  value={formData.paymentInfo?.paymentAmount ?? 0}
                   onChange={handleChange}
                 />
               </div>
@@ -1050,62 +965,274 @@ const EditJobPage = () => {
             </div>
           </div>
 
-          {/* Staff Info */}
+          {/* Staff Info (for initial assignment) */}
           <div className="space-y-2">
             <h2 className="text-xl font-semibold">Staff Assignment</h2>
             {/* This will be handled by the Assign Staff Dialog */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleAssignStaffClick(job as Job2)} // Pass current job data
+              onClick={handleAssignStaffClick} // No need to pass job data yet
               className="text-xs"
             >
               <UserPlus className="h-3 w-3 mr-1" />
               Assign Staff
             </Button>
-            {formData.staffInfo && (
+            {formData.staffInfo?.staffName && (
               <p className="text-sm text-gray-700">
-                Assigned Staff: {formData.staffInfo.staffId}
+                Assigned Staff: {formData.staffInfo.staffName}
               </p>
             )}
           </div>
 
-          {/* Order Arrays (simplified input) */}
-          {/* <div className="space-y-2">
-            <h2 className="text-xl font-semibold">
-              Order Information (JSON format)
-            </h2>
-            <div>
-              <Label htmlFor="medicineOrders">Medicine Orders</Label>
-              <Textarea
-                id="medicineOrders"
-                name="medicineOrders"
-                value={formData.medicineOrders ?? ""}
-                onChange={handleChange}
-                placeholder='[{"orderValue": 100, "orderDate": "2023-01-01", "paymentDate": "2023-01-15", "paymentAmount": 100}]'
-              />
+          {/* Order Information */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Order Information</h2>
+
+            {/* Medicine Orders */}
+            <div className="space-y-2">
+              <h3 className="text-lg font-medium">Medicine Orders</h3>
+              {formData.medicineOrders?.map((order, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"
+                >
+                  <div>
+                    <Label htmlFor={`medicineOrders-${index}-value`}>
+                      Value
+                    </Label>
+                    <Input
+                      id={`medicineOrders-${index}-value`}
+                      name={`medicineOrders.${index}.orderValue`}
+                      type="number"
+                      value={(order.orderValue ?? "").toString()}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`medicineOrders-${index}-orderDate`}>
+                      Order Date
+                    </Label>
+                    <Input
+                      id={`medicineOrders-${index}-orderDate`}
+                      name={`medicineOrders.${index}.orderDate`}
+                      type="date"
+                      value={
+                        order.orderDate instanceof Date
+                          ? order.orderDate.toISOString().split("T")[0]
+                          : (order.orderDate as unknown as string) ?? ""
+                      }
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`medicineOrders-${index}-paymentDate`}>
+                      Payment Date
+                    </Label>
+                    <Input
+                      id={`medicineOrders-${index}-paymentDate`}
+                      name={`medicineOrders.${index}.paymentDate`}
+                      type="date"
+                      value={
+                        order.paymentDate instanceof Date
+                          ? order.paymentDate.toISOString().split("T")[0]
+                          : (order.paymentDate as unknown as string) ?? ""
+                      }
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`medicineOrders-${index}-paymentAmount`}>
+                      Payment Amount
+                    </Label>
+                    <Input
+                      id={`medicineOrders-${index}-paymentAmount`}
+                      name={`medicineOrders.${index}.paymentAmount`}
+                      type="number"
+                      value={(order.paymentAmount ?? "").toString()}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeOrderEntry("medicineOrders", index)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => addOrderEntry("medicineOrders")}
+              >
+                Add Medicine Order
+              </Button>
             </div>
-            <div>
-              <Label htmlFor="diagnosticOrders">Diagnostic Orders</Label>
-              <Textarea
-                id="diagnosticOrders"
-                name="diagnosticOrders"
-                value={formData.diagnosticOrders ?? ""}
-                onChange={handleChange}
-                placeholder='[{"orderValue": 50, "orderDate": "2023-02-01", "paymentDate": "2023-02-10", "paymentAmount": 50}]'
-              />
+
+            {/* Diagnostic Orders */}
+            <div className="space-y-2">
+              <h3 className="text-lg font-medium">Diagnostic Orders</h3>
+              {formData.diagnosticOrders?.map((order, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"
+                >
+                  <div>
+                    <Label htmlFor={`diagnosticOrders-${index}-value`}>
+                      Value
+                    </Label>
+                    <Input
+                      id={`diagnosticOrders-${index}-value`}
+                      name={`diagnosticOrders.${index}.orderValue`}
+                      type="number"
+                      value={(order.orderValue ?? "").toString()}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`diagnosticOrders-${index}-orderDate`}>
+                      Order Date
+                    </Label>
+                    <Input
+                      id={`diagnosticOrders-${index}-orderDate`}
+                      name={`diagnosticOrders.${index}.orderDate`}
+                      type="date"
+                      value={
+                        order.orderDate instanceof Date
+                          ? order.orderDate.toISOString().split("T")[0]
+                          : (order.orderDate as unknown as string) ?? ""
+                      }
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`diagnosticOrders-${index}-paymentDate`}>
+                      Payment Date
+                    </Label>
+                    <Input
+                      id={`diagnosticOrders-${index}-paymentDate`}
+                      name={`diagnosticOrders.${index}.paymentDate`}
+                      type="date"
+                      value={
+                        order.paymentDate instanceof Date
+                          ? order.paymentDate.toISOString().split("T")[0]
+                          : (order.paymentDate as unknown as string) ?? ""
+                      }
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`diagnosticOrders-${index}-paymentAmount`}>
+                      Payment Amount
+                    </Label>
+                    <Input
+                      id={`diagnosticOrders-${index}-paymentAmount`}
+                      name={`diagnosticOrders.${index}.paymentAmount`}
+                      type="number"
+                      value={(order.paymentAmount ?? "").toString()}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeOrderEntry("diagnosticOrders", index)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => addOrderEntry("diagnosticOrders")}
+              >
+                Add Diagnostic Order
+              </Button>
             </div>
-            <div>
-              <Label htmlFor="otherOrders">Other Orders</Label>
-              <Textarea
-                id="otherOrders"
-                name="otherOrders"
-                value={formData.otherOrders ?? ""}
-                onChange={handleChange}
-                placeholder='[{"orderValue": 200, "orderDate": "2023-03-01", "paymentDate": "2023-03-20", "paymentAmount": 200}]'
-              />
+
+            {/* Other Orders */}
+            <div className="space-y-2">
+              <h3 className="text-lg font-medium">Other Orders</h3>
+              {formData.otherOrders?.map((order, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"
+                >
+                  <div>
+                    <Label htmlFor={`otherOrders-${index}-value`}>Value</Label>
+                    <Input
+                      id={`otherOrders-${index}-value`}
+                      name={`otherOrders.${index}.orderValue`}
+                      type="number"
+                      value={(order.orderValue ?? "").toString()}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`otherOrders-${index}-orderDate`}>
+                      Order Date
+                    </Label>
+                    <Input
+                      id={`otherOrders-${index}-orderDate`}
+                      name={`otherOrders.${index}.orderDate`}
+                      type="date"
+                      value={
+                        order.orderDate instanceof Date
+                          ? order.orderDate.toISOString().split("T")[0]
+                          : (order.orderDate as unknown as string) ?? ""
+                      }
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`otherOrders-${index}-paymentDate`}>
+                      Payment Date
+                    </Label>
+                    <Input
+                      id={`otherOrders-${index}-paymentDate`}
+                      name={`otherOrders.${index}.paymentDate`}
+                      type="date"
+                      value={
+                        order.paymentDate instanceof Date
+                          ? order.paymentDate.toISOString().split("T")[0]
+                          : (order.paymentDate as unknown as string) ?? ""
+                      }
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`otherOrders-${index}-paymentAmount`}>
+                      Payment Amount
+                    </Label>
+                    <Input
+                      id={`otherOrders-${index}-paymentAmount`}
+                      name={`otherOrders.${index}.paymentAmount`}
+                      type="number"
+                      value={(order.paymentAmount ?? "").toString()}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeOrderEntry("otherOrders", index)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => addOrderEntry("otherOrders")}
+              >
+                Add Other Order
+              </Button>
             </div>
-          </div> */}
+          </div>
 
           <div className="fixed bottom-6 right-6 z-10">
             <Button
@@ -1113,7 +1240,7 @@ const EditJobPage = () => {
               disabled={loading}
               className="shadow-lg rounded-full px-4 py-4 h-auto"
             >
-              {loading ? "Updating Job..." : "Update Job"}
+              {loading ? "Adding Job..." : "Add Job"}
               {!loading && <span className="ml-2">→</span>}
             </Button>
           </div>
@@ -1123,11 +1250,11 @@ const EditJobPage = () => {
         isOpen={isAssignDialogOpen}
         onClose={() => setIsAssignDialogOpen(false)}
         staffList={staffList}
-        jobToAssign={jobToAssign}
+        jobToAssign={jobToAssign} // This will be null in add page
         onAssign={handleStaffAssignment}
       />
     </Layout>
   );
 };
 
-export default EditJobPage;
+export default AddJobPage;

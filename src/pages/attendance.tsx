@@ -7,7 +7,7 @@ import { Attendance, Staff } from "@/types";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 // Mock data for staff (reusing from staff.tsx)
-const mockStaffData: Staff[] = [
+const mockStaffData: any[] = [
   {
     id: "1",
     providerId: "provider1",

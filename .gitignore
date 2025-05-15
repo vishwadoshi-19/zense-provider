@@ -22,3 +22,9 @@ yarn-error.log*
 # Other
 .DS_Store
 package-lock.json
+
+importJobs.js
+importJobs.ts
+sample_jobs_import.csv
+services example.png
+firexport_basic_1745844871617.json

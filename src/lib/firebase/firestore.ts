@@ -12,8 +12,12 @@ import {
   DocumentReference,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { FormState, UserData, StaffDetails } from "@/types";
+import { UserData, Staff } from "@/types";
 import { sub } from "date-fns";
+import { StaffData } from "@/types/StaffData";
+import { profile } from "console";
+import { date } from "zod";
+import { is } from "date-fns/locale";
 
 export const getUserById = async (uid: string) => {
   const docRef = doc(db, "users", uid);
@@ -111,97 +115,112 @@ export const uploadFile = async (file: File, path: string): Promise<string> => {
 };
 
 // Save form data to Firestore
-export const saveFormData = async (userId: string, formData: FormState) => {
+export const saveFormData = async (userId: string, formData: any) => {
   try {
     // Upload certificate if exists
-    let certificateURL = "";
-    if (formData.certificate instanceof File) {
-      certificateURL = await uploadFile(
-        formData.certificate,
-        `users/${userId}/certificates/${formData.certificate.name}`
-      );
-    }
 
-    // Upload ID proofs if they exist
-    let aadharFrontURL = "";
-    let aadharBackURL = "";
-    let panCardURL = "";
+    // let certificateURL = "";
+    // if (formData.certificate instanceof File) {
+    //   certificateURL = await uploadFile(
+    //     formData.certificate,
+    //     `users/${userId}/certificates/${formData.certificate.name}`
+    //   );
+    // }
 
-    if (formData.aadharFront instanceof File) {
-      aadharFrontURL = await uploadFile(
-        formData.aadharFront,
-        `users/${userId}/documents/aadhar_front_${formData.aadharFront.name}`
-      );
-    }
+    // // Upload ID proofs if they exist
+    // let aadharFrontURL = "";
+    // let aadharBackURL = "";
+    // let panCardURL = "";
 
-    if (formData.aadharBack instanceof File) {
-      aadharBackURL = await uploadFile(
-        formData.aadharBack,
-        `users/${userId}/documents/aadhar_back_${formData.aadharBack.name}`
-      );
-    }
+    // if (formData.aadharFront instanceof File) {
+    //   aadharFrontURL = await uploadFile(
+    //     formData.aadharFront,
+    //     `users/${userId}/documents/aadhar_front_${formData.aadharFront.name}`
+    //   );
+    // }
 
-    if (formData.panCard instanceof File) {
-      panCardURL = await uploadFile(
-        formData.panCard,
-        `users/${userId}/documents/pan_${formData.panCard.name}`
-      );
-    }
+    // if (formData.aadharBack instanceof File) {
+    //   aadharBackURL = await uploadFile(
+    //     formData.aadharBack,
+    //     `users/${userId}/documents/aadhar_back_${formData.aadharBack.name}`
+    //   );
+    // }
 
-    // Upload testimonial recording if exists
-    let recordingURL = "";
-    if (formData.recording instanceof File) {
-      recordingURL = await uploadFile(
-        formData.recording,
-        `users/${userId}/testimonials/${formData.recording.name}`
-      );
-    }
+    // if (formData.panCard instanceof File) {
+    //   panCardURL = await uploadFile(
+    //     formData.panCard,
+    //     `users/${userId}/documents/pan_${formData.panCard.name}`
+    //   );
+    // }
+
+    // // Upload testimonial recording if exists
+    // let recordingURL = "";
+    // if (formData.recording instanceof File) {
+    //   recordingURL = await uploadFile(
+    //     formData.recording,
+    //     `users/${userId}/testimonials/${formData.recording.name}`
+    //   );
+    // }
 
     // Update user data
     const userRef = doc(db, "users", userId);
     await updateDoc(userRef, {
-      name: formData.fullName || "",
-      location: formData.jobLocation || "",
+      name: formData.name || "",
       gender: formData.gender || "",
       // profilePhoto: formData.profilePhoto || "", // Use the URL directly
-      lastStep: formData.lastStep || "details",
       updatedAt: serverTimestamp(),
     });
 
     // Update user data with staff details
     await updateDoc(userRef, {
-      providerId: formData.agency || "self",
-      expectedWages: {
-        "5hrs": formData.lessThan5Hours || 0,
-        "12hrs": formData.hours12 || 0,
-        "24hrs": formData.hours24 || 0,
-      },
-      educationQualification: formData.qualification || "",
-      educationCertificate: certificateURL || "",
-      experienceYears: formData.experience || 0,
-      maritalStatus: formData.maritalStatus || "",
-      languagesKnown: formData.languages || [],
-      preferredShifts: formData.preferredShifts || [],
+      providerId: formData.providerId || "zense",
+      status: formData.status || "unregistered",
       jobRole: formData.jobRole || "",
-      extraServicesOffered: formData.services || [],
+      maritalStatus: formData.maritalStatus || "",
+      dateOfBirth: formData.dateOfBirth || "",
+      religion: formData.religion || "",
+      currentAddress: formData.currentAddress || {},
+      permanentAddress: formData.permanentAddress || {},
+      isCurrentAddressSameAsPermanent:
+        formData.isCurrentAddressSameAsPermanent || false,
+      isActive: formData.isActive || false,
+      aadharVerified: formData.aadharVerified || false,
+      policeVerified: formData.policeVerified || false,
+      bankDetails: formData.bankDetails || {},
+      availability: formData.availability || [],
+      expectedWages: formData.expectedWages || {
+        "5hrs": 0,
+        "12hrs": 0,
+        "24hrs": 0,
+      },
+      educationQualification: formData.educationQualification || "",
+      educationCertificate: formData.educationCertificate || "",
+      experienceYears: formData.experienceYears || 0,
+      languagesKnown: formData.languagesKnown || [],
+      preferredShifts: formData.preferredShifts || [],
+      extraServicesOffered: formData.extraServicesOffered || [],
       foodPreference: formData.foodPreference || "",
-      smokes: formData.smoking || "",
-      carryOwnFood12hrs: formData.carryFood || "",
+      smokes: formData.smokes || "",
+      carryOwnFood12hrs: formData.carryOwnFood12hrs || "",
       additionalInfo: formData.additionalInfo || "",
-      selfTestimonial: recordingURL
+      selfTestimonial: formData.selfTestimonial
         ? {
             customerName: formData.customerName || "",
             customerPhone: formData.customerPhone || "",
-            recording: recordingURL || "",
+            recording: formData.recordingURL || "",
           }
         : null,
-      identityDocuments: {
-        aadharNumber: formData.aadharNumber || "",
-        aadharFront: aadharFrontURL || "",
-        aadharBack: aadharBackURL || "",
-        panNumber: formData.panNumber || "",
-        panDocument: panCardURL,
+      profilePhoto: formData.profilePhoto || "",
+      identityDocuments: formData.identityDocuments || {
+        aadharFront: "",
+        aadharBack: "",
+        panDocument: "",
+        aadharNumber: "",
+        panNumber: "",
       },
+      district: formData.district || [],
+      subDistricts: formData.subDistricts || [],
+      services: formData.services || {},
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -224,7 +243,7 @@ export const getStaffDetails = async (userId: string) => {
         // console.log("Staff details found:", userData);
         return {
           success: true,
-          data: userData as StaffDetails,
+          data: userData as StaffData,
         };
       }
     }

@@ -9,7 +9,7 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 import { Calendar, Clock, CheckCircle, XCircle } from "lucide-react";
 
 // Mock data for staff (reusing from staff.tsx)
-const mockStaffData: Staff[] = [
+const mockStaffData: any[] = [
   {
     id: "1",
     providerId: "provider1",
@@ -85,7 +85,7 @@ const mockStaffData: Staff[] = [
 const AvailabilityPage = () => {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [staffList, setStaffList] = useState<Staff[]>(mockStaffData);
+  const [staffList, setStaffList] = useState<any[]>(mockStaffData);
   const [selectedDate] = useState<Date>(new Date());
 
   // Redirect if not logged in
@@ -112,7 +112,6 @@ const AvailabilityPage = () => {
   // Group staff by type
   const attendants = staffList.filter((staff) => staff.type === "Attendant");
   const nurses = staffList.filter((staff) => staff.type === "Nurse");
-  const semiNurses = staffList.filter((staff) => staff.type === "Semi-Nurse");
 
   // Calculate availability percentages
   const calculateAvailability = (staffArray: Staff[]) => {
@@ -125,7 +124,6 @@ const AvailabilityPage = () => {
 
   const attendantAvailability = calculateAvailability(attendants);
   const nurseAvailability = calculateAvailability(nurses);
-  const semiNurseAvailability = calculateAvailability(semiNurses);
 
   if (loading) {
     return (

@@ -2,10 +2,18 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Staff } from "@/types";
-import { Plus, Search, Edit, Trash } from "lucide-react";
+import { Plus, Search, Edit, Trash, X } from "lucide-react";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/utils/firebase";
+
+console.log("StaffList component loaded");
+
+function capitalize(word: string) {
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
 
 interface StaffListProps {
-  staffList: Staff[];
+  staffList: any[];
   onAddStaff: () => void;
   onEditStaff: (staff: Staff) => void;
   onDeleteStaff: (staffId: string) => void;
@@ -22,19 +30,23 @@ const StaffList = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("All");
   const [filterAvailability, setFilterAvailability] = useState<string>("All");
+  const [filterStatus, setFilterStatus] = useState<string>("All");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   const filteredStaff = staffList.filter((staff) => {
     const matchesSearch =
-      staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.contactNumber.includes(searchTerm);
-    const matchesType = filterType === "All" || staff.type === filterType;
+      staff?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staff?.phone?.includes(searchTerm);
+    const matchesType =
+      filterType === "All" || staff?.jobRole?.toLowerCase() === filterType;
+    const matchesStatus =
+      filterStatus === "All" || staff?.status === filterStatus;
     const matchesAvailability =
       filterAvailability === "All" ||
-      (filterAvailability === "Available" && staff.availability) ||
-      (filterAvailability === "Unavailable" && !staff.availability);
-    return matchesSearch && matchesType && matchesAvailability;
+      (filterAvailability === "Available" && staff?.availability) ||
+      (filterAvailability === "Unavailable" && !staff?.availability);
+    return matchesSearch && matchesType && matchesAvailability && matchesStatus;
   });
 
   // Pagination logic
@@ -62,6 +74,21 @@ const StaffList = ({
           />
         </div>
 
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setSearchTerm("");
+            setFilterType("All");
+            setFilterAvailability("All");
+            setFilterStatus("All");
+            setCurrentPage(1);
+          }}
+          className="w-full sm:w-auto "
+        >
+          <X className="h-4 w-4 mr-2" />
+          Clear Filters
+        </Button>
+
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <select
             className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -69,19 +96,21 @@ const StaffList = ({
             onChange={(e) => setFilterType(e.target.value)}
           >
             <option value="All">All Types</option>
-            <option value="attendant">Attendants</option>
-            <option value="nurse">Nurses</option>
+            <option value="attendant">Attendant</option>
+            <option value="nurse">Nurse</option>
             {/* <option value="Semi-Nurse">Semi-Nurses</option> */}
           </select>
 
           <select
             className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            value={filterAvailability}
-            onChange={(e) => setFilterAvailability(e.target.value)}
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
           >
             <option value="All">All Status</option>
-            <option value="Available">Available</option>
-            <option value="Unavailable">Unavailable</option>
+            <option value="unregistered">Unregistered</option>
+            <option value="registered">Registered</option>
+            <option value="live">Live</option>
+            <option value="suspended">Suspended</option>
           </select>
 
           <Button onClick={onAddStaff} className="whitespace-nowrap">
@@ -136,40 +165,39 @@ const StaffList = ({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentStaff.length > 0 ? (
+                // Debugging line
                 currentStaff.map((staff) => (
-                  <tr
-                    key={staff.id}
-                    onClick={() => onViewStaff(staff.id)}
-                    className="cursor-pointer hover:bg-gray-50"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
+                  <tr key={staff.id} className=" hover:bg-gray-50">
+                    <td
+                      className="px-6 cursor-pointer py-4 whitespace-nowrap"
+                      onClick={() => {
+                        console.log("Staff clicked", staff.id);
+                        onViewStaff(staff.id);
+                      }}
+                    >
                       <div className="text-sm font-medium text-gray-900">
-                        {staff.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{staff.type}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {staff.contactNumber}
+                        {staff?.name || staff?.fullName}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
-                        {staff.experience} years
+                        {capitalize(staff?.jobRole)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          staff.availability
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {staff.availability ? "Available" : "Unavailable"}
-                      </span>
+                      <div className="text-sm text-gray-500">
+                        {staff?.phone}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">
+                        {staff?.experienceYears} years
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">
+                        {capitalize(staff?.status)}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">

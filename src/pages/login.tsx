@@ -9,11 +9,11 @@ const LoginPage = () => {
   const router = useRouter();
 
   // Redirect if already logged in
-  // React.useEffect(() => {
-  //   if (!loading && user) {
-  //     router.push('/dashboard');
-  //   }
-  // }, [user, loading, router]);
+  React.useEffect(() => {
+    if (!loading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, loading, router]);
 
   if (loading) {
     return (

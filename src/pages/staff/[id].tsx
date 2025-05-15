@@ -5,19 +5,35 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 import { Staff } from "@/types";
 import { doc, getDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/utils/firebase";
+import Image from "next/image";
 
 import { Avatar } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Mail, MapPin, Phone } from "lucide-react";
+import {
+  Activity,
+  Check,
+  FileCheck2,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+} from "lucide-react";
 import { downloadResumeAsPDF } from "@/lib/downloadPDF";
 
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
+import { profile } from "console";
+
+function capitalize(word: string | undefined | null) {
+  if (!word) return "";
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
 
 const StaffDetailPage = () => {
   const router = useRouter();
   const { id } = router.query;
-  const [staff, setStaff] = useState<Staff | null>(null);
+  const [staff, setStaff] = useState<any>({});
+  const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,22 +45,63 @@ const StaffDetailPage = () => {
           const staffDocSnap = await getDoc(staffDocRef);
 
           if (staffDocSnap.exists()) {
-            const data = staffDocSnap.data();
+            const staff = staffDocSnap.data();
 
             setStaff({
-              id: staffDocSnap.id,
-              providerId: data.providerId,
-              name: data.name,
-              type: data.jobRole,
-              contactNumber: data.phone,
-              email: data.email,
-              address: data.address,
-              experience: data.experience,
-              availability: data.availability,
-              currentAssignment: data.currentAssignment || null,
-              createdAt: (data.createdAt as Timestamp).toDate(),
-              updatedAt: (data.updatedAt as Timestamp).toDate(),
+              id: staff.id,
+              name: staff.name,
+              gender: staff.gender,
+              phone: staff.phone,
+              profilePhotoURL: staff.profilePhotoURL,
+
+              providerId: staff.providerId,
+              status: staff.status || "unregistered",
+              jobRole: staff.jobRole || "",
+              maritalStatus: staff.maritalStatus || "",
+              dateOfBirth: staff.dateOfBirth || "",
+              religion: staff.religion || "",
+              currentAdress: staff.currentAddress || {},
+              permanentAddress: staff.permanentAddress || {},
+              isCurrentAddressSameAsPermanent:
+                staff.isCurrentAddressSameAsPermanent,
+              isActive: staff.isActive || false,
+              aadharVerified: staff.aadharVerified || false,
+              policeVerified: staff.policeVerified || false,
+              bankDetails: staff.bankDetails || {},
+              availability: staff.availability || [],
+              expectedWages: staff.expectedWages || {
+                "5hrs": 0,
+                "12hrs": 0,
+                "24hrs": 0,
+              },
+              educationQualification: staff.educationQualification || "",
+              educationCertificate: staff.educationCertificate || "",
+              experienceYears: staff.experienceYears || "<1",
+              languagesKnown: staff.languagesKnown || [],
+              preferredShifts: staff.preferredShifts || [],
+              services: staff.services || {},
+              foodPreference: staff.foodPreference || "",
+              smokes: staff.smokes || "",
+              carryOwnFood12hrs: staff.carryOwnFood12hrs || "",
+              additionalInfo: staff.additionalInfo || "",
+              selfTestimonial: staff.selfTestimonial || null,
+              profilePhoto: staff.profilePhoto || "",
+              identityDocuments: staff.identityDocuments || {
+                aadharFront: "",
+                aadharBack: "",
+                panDocument: "",
+                aadharNumber: "",
+                panNumber: "",
+              },
+              district: staff.district || [],
+              subDistricts: staff.subDistricts || [],
             });
+            if (staff?.experienceYears === "less-than-1") {
+              setStaff((prevState: any) => ({
+                ...prevState,
+                experienceYears: "<1",
+              }));
+            }
           } else {
             setError("Staff member not found.");
           }
@@ -57,10 +114,42 @@ const StaffDetailPage = () => {
       }
     };
 
+    async function getTopTwoReviews(staffId: string) {
+      try {
+        const response = await fetch(
+          `/api/reviews/getTopTwoByStaffId?staff_id=${staffId}`
+        );
+
+        if (!response.ok) {
+          throw new Error(`Error fetching reviews: ${response.statusText}`);
+        }
+
+        const reviewsFetched = await response.json();
+        console.log("Reviews fetched:", reviewsFetched);
+        if (reviewsFetched.length === 0) {
+          setError("No reviews available for this staff member.");
+        } else {
+          setReviews(reviewsFetched);
+        }
+        return reviews;
+      } catch (error) {
+        console.error("Failed to fetch top reviews:", error);
+        return []; // Return an empty array or handle the error as appropriate
+      } finally {
+        setLoading(false);
+        console.log("Reviews set:", reviews);
+      }
+    }
+
     if (router.isReady) {
       fetchStaff();
+      getTopTwoReviews(id as string);
     }
   }, [id, router.isReady]);
+
+  console.log("Staff data:", staff);
+  console.log("Staff ID:", id);
+  console.log("Reviews:", reviews);
 
   if (loading) {
     return (
@@ -97,30 +186,57 @@ const StaffDetailPage = () => {
       <div>
         <div
           id="resume"
-          className="w-[210mm] h-[297mm] mx-auto bg-white shadow-sm print:shadow-none overflow-hidden"
+          className="w-[210mm] h-[297mm] p-6 mx-auto bg-white shadow-sm print:shadow-none overflow-hidden"
         >
           {/* Header */}
           <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
             <div className="flex items-center gap-4">
-              <Avatar className="w-28 h-28 border-2 border-green-500">
-                <img
-                  src="/placeholder.svg?height=128&width=128"
-                  alt="Deepak"
-                  className="object-cover"
-                />
+              <Avatar className="w-28 h-28 border-2 border-green-500 overflow-hidden">
+                <div className="w-full h-full relative">
+                  <Image
+                    src={staff?.profilePhoto || "/default-profile.png"}
+                    alt="PROFILE PHOTO"
+                    width={110}
+                    height={110}
+                    // layout="fill"
+                    objectFit="cover"
+                    className="rounded-full"
+                  />
+                </div>
               </Avatar>
               <div>
-                <h1 className="text-3xl font-bold">
-                  {staff?.name?.toUpperCase()}
-                </h1>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-3xl font-bold pr-4">
+                      {staff?.name?.toUpperCase()}
+                    </h1>
+                    <div className="flex gap-1">
+                      {staff?.isActive && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 border border-green-200">
+                          <Activity />
+                        </span>
+                      )}
+                      {staff?.aadharVerified && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                          <FileCheck2 />
+                        </span>
+                      )}
+                      {staff?.policeVerified && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                          <ShieldCheck />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
                 <p className="text-xl text-muted-foreground">
-                  {staff.type.charAt(0).toUpperCase() + staff.type.slice(1)}
+                  {capitalize(staff?.jobRole) || "Staff"}
                 </p>
               </div>
             </div>
             <div className="flex items-center">
               <img
-                src="/placeholder.svg?height=80&width=160"
+                src="/icon-512.png"
                 alt="NURCH ELDER CARE BUSINESS"
                 className="h-20"
               />
@@ -130,242 +246,238 @@ const StaffDetailPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* About Me & Contact */}
             <div className="space-y-4">
-              <Card>
+              <Card className="p-2">
                 <CardHeader className="pb-2 pt-3">
                   <CardTitle>About me</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 py-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Native State:</span>
-                    <span>Bihar</span>
+                    <span>
+                      {capitalize(staff?.permanentAddress?.state) || "N/A"}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Age:</span>
-                    <span>41</span>
+                    <span>
+                      {staff?.dateOfBirth
+                        ? new Date().getFullYear() -
+                          new Date(staff?.dateOfBirth).getFullYear()
+                        : "N/A"}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
                       Marital Status:
                     </span>
-                    <span>Married</span>
+                    <span>{capitalize(staff?.maritalStatus)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Religion:</span>
-                    <span>Atheist</span>
+                    <span>{capitalize(staff?.religion) || "N/A"}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Education:</span>
-                    <span>GNA Certified</span>
+                    <span>
+                      {capitalize(staff?.educationQualification) || "N/A"}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Experience:</span>
-                    <span>10+ years</span>
+                    <span>{staff?.experienceYears} Years</span>
                   </div>
                 </CardContent>
               </Card>
 
               {/* <Card>
-              <CardHeader className="pb-2 pt-3">
-                <CardTitle>My Contact Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1 py-2">
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Current Address:</p>
-                    <p className="text-sm text-muted-foreground">
-                      C/o Shyam Sundar, RZ 210, Karan Vihar - Part 1, Gully no
-                      3, Kirari Suleiman Nagar, Delhi: 110086
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Permanent Address:</p>
-                    <p className="text-sm text-muted-foreground">
-                      Same as above
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-5 w-5 text-green-600" />
-                  <p>+91-9220249040</p>
-                </div>
-              </CardContent>
-            </Card> */}
-
-              <Card>
                 <CardHeader className="pb-2 pt-3">
-                  <CardTitle>My Food preferences</CardTitle>
+                  <CardTitle>My Contact Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1 py-2">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium">Current Address:</p>
+                      <p className="text-sm text-muted-foreground">
+                        C/o Shyam Sundar, RZ 210, Karan Vihar - Part 1, Gully no
+                        3, Kirari Suleiman Nagar, Delhi: 110086
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium">Permanent Address:</p>
+                      <p className="text-sm text-muted-foreground">
+                        Same as above
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-5 w-5 text-green-600" />
+                    <p>+91-9220249040</p>
+                  </div>
+                </CardContent>
+              </Card> */}
+
+              <Card className="p-2">
+                <CardHeader className="pb-2 pt-3">
+                  <CardTitle>My Preferences</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 py-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Eats:</span>
-                    <span>Veg & Non Veg</span>
+                    <span>{capitalize(staff?.foodPreference) || "N/A"}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Smoking:</span>
-                    <span>No</span>
+                    <span>{capitalize(staff?.smokes) || "N/A"}</span>
                   </div>
-                  <div className="flex justify-between">
+                  {/* <div className="flex justify-between">
                     <span className="text-muted-foreground">Drinking:</span>
                     <span>No</span>
-                  </div>
+                  </div> */}
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="p-2">
                 <CardHeader className="pb-2 pt-3">
-                  <CardTitle>My Verification Status</CardTitle>
+                  <CardTitle>My Verification</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 py-2">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Aadhar no:</span>
-                    <span>32060706 6175</span>
+                    <span className="text-muted-foreground text-sm">
+                      Aadhar :
+                    </span>
+                    <span className="text-sm">
+                      {staff?.identityDocuments?.aadharNumber || "444433338888"}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
+                  {/* <div className="flex justify-between">
                     <span className="text-muted-foreground">
                       Last police verification:
                     </span>
                     <span>N/A</span>
-                  </div>
+                  </div> */}
                 </CardContent>
               </Card>
             </div>
 
             {/* Services */}
             <div className="md:col-span-2 space-y-4">
-              <Card>
+              <Card className="p-2">
                 <CardHeader className="pb-2 pt-3">
                   <CardTitle>Services I offer</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 py-2">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <h3 className="text-base font-semibold text-green-600 mb-1">
-                        Mobility
-                      </h3>
-                      <ul className="space-y-0.5">
-                        <li className="text-sm">Walking assistance</li>
-                        <li className="text-sm">Turn position in bed</li>
-                        <li className="text-sm">Motion exercises</li>
-                        <li className="text-sm">Massages (weekly)</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-green-600 mb-1">
-                        Nutrition
-                      </h3>
-                      <ul className="space-y-0.5">
-                        <li className="text-sm">Assist in feeding</li>
-                        <li className="text-sm">Help in fluid intake</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-green-600 mb-1">
-                        Personal care
-                      </h3>
-                      <ul className="space-y-0.5">
-                        <li className="text-sm">Oral hygiene</li>
-                        <li className="text-sm">Bathing/Sponging</li>
-                        <li className="text-sm">Skin care</li>
-                        <li className="text-sm">Assist in getting dressed</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-green-600 mb-1">
-                        Maintenance
-                      </h3>
-                      <ul className="space-y-0.5">
-                        <li className="text-sm">Take out room trash</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-green-600 mb-1">
-                        Hygiene
-                      </h3>
-                      <ul className="space-y-0.5">
-                        <li className="text-sm">Help in toileting</li>
-                        <li className="text-sm">Urinal/Bedpan assistance</li>
-                        <li className="text-sm">Changing diapers</li>
-                        <li className="text-sm">Empty catheter bag</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-green-600 mb-1">
-                        Support
-                      </h3>
-                      <ul className="space-y-0.5">
-                        <li className="text-sm">Companionship</li>
-                        <li className="text-sm">Polite conversations</li>
-                        <li className="text-sm">
-                          Accompany for Doctor's visit
-                        </li>
-                        <li className="text-sm">
-                          Assist during diagnostic tests
-                        </li>
-                        <li className="text-sm">Measuring vitals</li>
-                        <li className="text-sm">Book a cab</li>
-                      </ul>
-                    </div>
+                    {Object.entries(staff.services || {})
+                      .filter(([category]) =>
+                        [
+                          "Personal_care",
+                          "Nutrition",
+                          "Hygiene",
+                          "Support",
+                          "Mobility",
+                          "Other",
+                        ].includes(category)
+                      )
+                      .map(([category, services]) => (
+                        <div key={category}>
+                          <h3 className="text-base font-semibold text-green-600 mb-1">
+                            {category}
+                          </h3>
+                          <ul className="space-y-0.5">
+                            {Array.isArray(services) ? (
+                              (services as string[]).map((service, index) => (
+                                <div className="flex items-center gap-2">
+                                  <Check className="text-sm text-green-600" />
+                                  <span className="text-sm">
+                                    {capitalize(service.trim())}
+                                  </span>
+                                </div>
+                              ))
+                            ) : (
+                              <>
+                                <Check className="text-sm text-green-600" />
+                                <li className="text-sm">
+                                  {services as string}
+                                </li>
+                              </>
+                            )}
+                          </ul>
+                        </div>
+                      ))}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-2 pt-3">
-                  <CardTitle>I can also help you with</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-1 py-2">
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Clean patient's room</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Make tea / coffee</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Cut fruits</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Give medicine</span>
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
+              {Object.entries(staff.services || {}).filter(
+                ([category]) => !isNaN(Number(category))
+              ).length > 0 && (
+                <Card className="p-2">
+                  <CardHeader className="pb-2 pt-3">
+                    <CardTitle>I can also help you with</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-1 py-2">
+                    {Object.entries(staff.services || {})
+                      .filter(([category]) => !isNaN(Number(category)))
+                      .map(([category, service]) => (
+                        <div key={category} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-green-600" />
+                          <span className="text-sm">{service as string}</span>
+                        </div>
+                      ))}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
-          <Card className="mb-2 mt-3">
+          <Card className="p-2 mt-4">
             <CardHeader className="pb-2 pt-3">
               <CardTitle>Here's what other customers say about me</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1 py-2">
-              <div className="border rounded-lg p-3">
-                <p className="text-xs italic mb-1">
-                  "Deepak is truly a blessing for our family. Jab se unhone mere
-                  papa ki care lena shuru kiya, tab se ek alag hi sukoon mil
-                  gaya hai. He is very patient and understanding, aur unka
-                  nature itna caring hai ki papa bhi unse bohot attached ho gaye
-                  hain. Bas ek hi cheez-kabhi-kabhi late ho jaate hain, but phir
-                  bhi unki service 10/10 hai!"
-                </p>
-                <p className="text-sm font-medium">- Ramesh Mistri</p>
-              </div>
-              <div className="border rounded-lg p-3">
-                <p className="text-xs italic mb-1">
-                  "Deepak ka kaam bohot hi accha hai. Unka experience clearly
-                  dikhai deta hai. Meri mummy ke saath bohot patiently deal
-                  karte hain, unhe stories sunate hain, aur unka khayal apne
-                  family member ki tarah rakhte hain. Overall, hum unse bohot
-                  khush hain, aur unki services definitely recommend karenge."
-                </p>
-                <p className="text-sm font-medium">– Sanjay Kumar</p>
-              </div>
+              {loading ? (
+                <div className="flex justify-center py-4">
+                  <LoadingSpinner size="sm" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {reviews && reviews.length > 0 ? (
+                    reviews.map((review: any, index: any) => (
+                      <div key={index} className="border rounded-lg p-3">
+                        <div className="mb-1">
+                          <p className="text-xs italic mb-1">
+                            "{review?.text}"
+                          </p>
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={
+                                  i < review?.stars
+                                    ? "text-yellow-500"
+                                    : "text-gray-300"
+                                }
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-sm font-medium">
+                          - {review?.customerName}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center">
+                      No reviews available yet.
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 

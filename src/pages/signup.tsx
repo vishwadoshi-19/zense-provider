@@ -9,11 +9,21 @@ const SignupPage = () => {
   const router = useRouter();
 
   // Redirect if already logged in
+  React.useEffect(() => {
+    if (!loading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, loading, router]);
+
+  // Redirect if not logged in
+  // This is a temporary solution. Ideally, we should check if the user is logged in
+  // and redirect to the login page if not.
+
   // React.useEffect(() => {
-  //   if (!loading && user) {
-  //     router.push('/dashboard');
+  //   if (true) {
+  //     router.push("/login");
   //   }
-  // }, [user, loading, router]);
+  // });
 
   if (loading) {
     return (

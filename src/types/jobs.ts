@@ -1,18 +1,18 @@
-interface OrderEntry {
-  orderValue: number;
-  orderDate: Date;
-  paymentDate: Date;
-  paymentAmount: number;
+export interface OrderEntry {
+  orderValue?: number;
+  orderDate?: Date | string;
+  paymentDate?: Date | string;
+  paymentAmount?: number;
 }
 
-interface GuardianInfo {
+export interface GuardianInfo {
   name: string;
   relationship: string;
   mobile: string;
   email: string;
 }
 
-interface PatientInfo {
+export interface PatientInfo {
   name: string;
   age: number;
   gender: string;
@@ -24,7 +24,7 @@ interface PatientInfo {
   patientId: string;
 }
 
-interface AcquisitionInfo {
+export interface AcquisitionInfo {
   mode: "Online" | "Offline";
   channel:
     | "Customer Referral"
@@ -34,46 +34,47 @@ interface AcquisitionInfo {
   referrerRemarks: string;
 }
 
-interface PaymentInfo {
-  modeOfPayment: string;
-  paymentDate: Date;
-  paymentAmount: number;
-  refundDate: Date;
-  refundAmount: number;
+export interface PaymentInfo {
+  modeOfPayment?: string;
+  paymentDate?: Date | string;
+  paymentAmount?: number;
+  refundDate?: Date | string;
+  refundAmount?: number;
 }
 
-interface StaffInfo {
+export interface StaffInfo {
   staffId: string;
   staffName: string;
   staffMobile: string;
 }
 
-interface Job {
+export interface Job2 {
+  id: string;
   jobType: string;
   serviceType: string;
   serviceShift: string;
   jobDuration: number;
-  startDate: Date;
-  endDate: Date;
-  signUpDate: Date;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  signUpDate?: Date | string;
   description: string;
   requirements: string[];
   notes: string;
   status: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 
   // Grouped Info
-  patientInfo: PatientInfo;
-  guardianInfo: GuardianInfo;
-  acquisitionInfo: AcquisitionInfo;
-  paymentInfo: PaymentInfo;
-  staffInfo: StaffInfo;
+  patientInfo: Partial<PatientInfo>;
+  guardianInfo: Partial<GuardianInfo>;
+  acquisitionInfo: Partial<AcquisitionInfo>;
+  paymentInfo: Partial<PaymentInfo>;
+  staffInfo: Partial<StaffInfo>;
 
-  pricePerHour: number;
+  pricePerHour?: number;
 
   // Order arrays
-  medicineOrders: OrderEntry[];
-  diagnosticOrders: OrderEntry[];
-  otherOrders: OrderEntry[];
+  medicineOrders: Array<Partial<OrderEntry>>;
+  diagnosticOrders: Array<Partial<OrderEntry>>;
+  otherOrders: Array<Partial<OrderEntry>>;
 }

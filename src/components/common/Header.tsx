@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { UserCircle, Menu, Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getAuth, signOut } from "firebase/auth";
 
 const Header = () => {
   const router = useRouter();
@@ -14,6 +15,14 @@ const Header = () => {
 
   const handleLogout = () => {
     // Handle logout logic here
+    const auth = getAuth();
+    signOut(auth)
+      .then(() => {
+        console.log("User signed out successfully");
+      })
+      .catch((error) => {
+        console.error("Error signing out:", error);
+      });
     router.push("/login");
   };
 

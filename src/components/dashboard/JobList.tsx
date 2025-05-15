@@ -2,16 +2,25 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Job, Staff } from "@/types";
-import { Plus, Search, Edit, Trash, UserPlus } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash,
+  UserPlus,
+  X,
+  UserRoundCheck,
+} from "lucide-react";
 import { format } from "date-fns";
 import AssignStaffDialog from "./AssignStaffDialog";
 import { useRouter } from "next/router";
+import { Job2 } from "@/types/jobs";
 
 interface JobListProps {
-  jobList: Job[];
+  jobList: Job2[];
   staffList: Staff[]; // Assuming staffList is passed as a prop
   onAddJob: () => void;
-  onEditJob: (job: Job) => void;
+  onEditJob: (job: Job2) => void;
   onDeleteJob: (jobId: string) => void;
   onStaffAssigned: (staffId: string, jobId: string) => Promise<void>; // Renamed and updated type
 }
@@ -31,11 +40,11 @@ const JobList = ({
   const [filterShift, setFilterShift] = useState<string>("All");
   const [filterAssigned, setFilterAssigned] = useState<string>("All");
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [jobToAssign, setJobToAssign] = useState<Job | null>(null);
+  const [jobToAssign, setJobToAssign] = useState<Job2 | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const handleAssignStaffClick = (job: Job) => {
+  const handleAssignStaffClick = (job: Job2) => {
     setJobToAssign(job);
     setIsAssignDialogOpen(true);
   };
@@ -47,22 +56,28 @@ const JobList = ({
   const handleStaffAssignment = async (staffId: string, jobId: string) => {
     // Made async
     await onStaffAssigned(staffId, jobId); // Call the updated prop and await it
+    jobToAssign!.staffInfo = { staffId };
     setIsAssignDialogOpen(false);
     setJobToAssign(null);
   };
 
   const filteredJobs = jobList.filter((job) => {
+    console.log("Job ID:", job.id, job);
     const matchesSearch =
-      job?.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job?.patientInfo?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      false ||
       job.id.includes(searchTerm);
     const matchesStatus = filterStatus === "All" || job.status === filterStatus;
     const matchesService =
-      filterService === "All" || job.serviceType === filterService;
-    const matchesShift = filterShift === "All" || job.JobType === filterShift;
+      filterService === "All" || job.jobType === filterService;
+    const matchesShift =
+      filterShift === "All" || job.serviceType === filterShift;
     const matchesAssigned =
       filterAssigned === "All" ||
-      (filterAssigned === "Assigned" && job.staffId) ||
-      (filterAssigned === "Not Assigned" && !job.staffId);
+      (filterAssigned === "Assigned" && job?.staffInfo?.staffId) ||
+      (filterAssigned === "Not Assigned" && !job?.staffInfo?.staffId);
 
     return (
       matchesSearch &&
@@ -82,20 +97,49 @@ const JobList = ({
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case "Pending":
+      case "pending":
         return "bg-yellow-100 text-yellow-800";
       case "assigned": // Changed from "Assigned" to "assigned"
         return "bg-blue-100 text-blue-800";
-      case "In Progress":
+      case "ongoing":
         return "bg-green-100 text-green-800";
-      case "Completed":
+      case "conpleted":
         return "bg-purple-100 text-purple-800";
-      case "Cancelled":
+      case "cancelled":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+  const [isStaffViewDialogOpen, setIsStaffViewDialogOpen] = useState(false);
+
+  function onViewAssignedStaff(job: Job2): void {
+    if (job?.staffInfo?.staffId) {
+      router.push(`/staff/${job.staffInfo.staffId}`);
+      // Find the staff member from staffList using the staffId
+      const staffMember = staffList.find(
+        (staff) => staff.id === job.staffInfo?.staffId
+      );
+
+      if (staffMember) {
+        setSelectedStaff(staffMember);
+        setIsStaffViewDialogOpen(true);
+      } else {
+        // Handle case where staff ID exists but staff not found
+        console.error(`Staff with ID ${job.staffInfo.staffId} not found`);
+        // Could show a toast notification here
+      }
+    }
+  }
+
+  // const startDate = job?.startDate?.toDate
+  //   ? format(job.startDate.toDate(), "yyyy-MM-dd")
+  //   : "";
+  // currentJobs.forEach((job) => {
+  //   console.log("Job ID:", job.id, job);
+  // });
 
   return (
     <div className="space-y-4">
@@ -111,6 +155,22 @@ const JobList = ({
           />
         </div>
 
+        <Button
+          variant="ghost"
+          onClick={() => {
+            setSearchTerm("");
+            setFilterStatus("All");
+            setFilterService("All");
+            setFilterShift("All");
+            setFilterAssigned("All");
+            setCurrentPage(1);
+          }}
+          className="w-full sm:w-auto "
+        >
+          <X className="h-4 w-4 mr-2" />
+          Clear Filters
+        </Button>
+
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <select
             className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -118,12 +178,12 @@ const JobList = ({
             onChange={(e) => setFilterStatus(e.target.value)}
           >
             <option value="All">All Status</option>
-            <option value="Pending">Pending</option>
+            <option value="pending">Pending</option>
             <option value="assigned">Assigned</option>{" "}
             {/* Changed value to "assigned" */}
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-            <option value="Cancelled">Cancelled</option>
+            <option value="ongoing">Ongoing</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
           </select>
 
           <select
@@ -142,9 +202,9 @@ const JobList = ({
             onChange={(e) => setFilterShift(e.target.value)}
           >
             <option value="All">All Shifts</option>
-            <option value="6hour">6 Hours</option>
-            <option value="12hour">12 Hours</option>
-            <option value="24hour">24 Hours</option>
+            <option value="6 hour">6 Hours</option>
+            <option value="12 hour">12 Hours</option>
+            <option value="24 hour">24 Hours</option>
           </select>
 
           <select
@@ -219,28 +279,34 @@ const JobList = ({
                   <tr key={job.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {job.customerName}
+                        {job.patientInfo?.name}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {job.customerAge} yrs, {job.customerGender || "N/A"}
+                        {job?.patientInfo?.age} yrs,{" "}
+                        {job?.patientInfo?.gender || "N/A"}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
-                        {job.serviceType}
+                        {job?.jobType}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{job.JobType}</div>
+                      <div className="text-sm text-gray-500">
+                        {job?.serviceType}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
-                        {job.startDate
-                          ? job.startDate &&
-                            !isNaN(new Date(job.startDate).getTime())
-                            ? format(new Date(job.startDate), "MM dd, yyyy")
-                            : "Invalid Date"
-                          : "N/A"}
+                        {job?.startDate
+                          ? typeof job.startDate === "object" &&
+                            "toDate" in job.startDate &&
+                            typeof job.startDate.toDate === "function"
+                            ? format(job.startDate.toDate(), "dd/MM/yyyy")
+                            : typeof job.startDate === "string"
+                            ? job.startDate
+                            : format(job.startDate, "dd/MM/yyyy")
+                          : ""}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -253,9 +319,7 @@ const JobList = ({
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {job.staffId ? (
-                        <div className="text-sm text-gray-500">Assigned</div>
-                      ) : (
+                      {
                         <Button
                           variant="outline"
                           size="sm"
@@ -265,10 +329,20 @@ const JobList = ({
                           <UserPlus className="h-3 w-3 mr-1" />
                           Assign
                         </Button>
-                      )}
+                      }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
+                        {job?.staffInfo?.staffId && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onViewAssignedStaff(job)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <UserRoundCheck className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
