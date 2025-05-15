@@ -144,12 +144,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Define the superadmin credentials
       const superAdminEmail = process.env.NEXT_PUBLIC_SUPERADMIN_EMAIL;
       const superAdminPassword = process.env.NEXT_PUBLIC_SUPERADMIN_PASSWORD;
-      console.log(
-        "Superadmin Email:",
-        superAdminEmail,
-        "Superadmin Password:",
-        superAdminPassword
-      );
+      // console.log(
+      //   "Superadmin Email:",
+      //   superAdminEmail,
+      //   "Superadmin Password:",
+      //   superAdminPassword
+      // );
 
       // Check if the provided credentials match the superadmin credentials
       if (email == superAdminEmail && password == superAdminPassword) {

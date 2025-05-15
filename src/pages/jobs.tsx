@@ -81,7 +81,7 @@ const JobsPage = () => {
         );
         const querySnapshot = await getDocs(q);
 
-        const fetchedStaff: Staff[] = querySnapshot.docs.map((doc) => {
+        const fetchedStaff: any[] = querySnapshot.docs.map((doc) => {
           const data = doc.data();
           return {
             id: doc.id,
@@ -114,6 +114,7 @@ const JobsPage = () => {
         console.error("Error fetching staff:", error);
       } finally {
         setFetchingStaff(false);
+        console.log("Staff list state:", staffList);
       }
     };
 

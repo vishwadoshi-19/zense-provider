@@ -231,26 +231,18 @@ const EditJobPage = () => {
     }
   };
 
-  const handleAssignStaffClick = (job: Job2) => {
-    setJobToAssign(job);
-    setIsAssignDialogOpen(true);
-  };
+  // const handleAssignStaffClick = (job: Job2) => {
+  //     setJobToAssign(job);
+  //     setIsAssignDialogOpen(true);
+  //   };
 
-  const handleStaffAssignment = async (staffId: string, staffName: string) => {
-    // This function will be called from the AssignStaffDialog
-    // Update the formData with the selected staff info
-    setFormData((prev) => ({
-      ...prev,
-      staffInfo: {
-        staffId: staffId,
-        staffName: staffName,
-        staffMobile:
-          staffList.find((staff) => staff.id === staffId)?.contactNumber || "", // Assuming contactNumber is mobile
-      },
-    }));
-    setIsAssignDialogOpen(false);
-    setJobToAssign(null);
-  };
+  //   const handleStaffAssignment = async (staffId: string, jobId: string) => {
+  //     // Made async
+  //     await onStaffAssigned(staffId, jobId); // Call the updated prop and await it
+  //     jobToAssign!.staffInfo = { staffId };
+  //     setIsAssignDialogOpen(false);
+  //     setJobToAssign(null);
+  //   };
 
   // Helper function to get Date value from string
   const getDateValue = (value: string | undefined) => {
@@ -1054,19 +1046,33 @@ const EditJobPage = () => {
           <div className="space-y-2">
             <h2 className="text-xl font-semibold">Staff Assignment</h2>
             {/* This will be handled by the Assign Staff Dialog */}
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
-              onClick={() => handleAssignStaffClick(job as Job2)} // Pass current job data
+              onClick={() => handleAssignStaffClick(job)} // Pass current job data
               className="text-xs"
             >
               <UserPlus className="h-3 w-3 mr-1" />
               Assign Staff
-            </Button>
+            </Button> */}
             {formData.staffInfo && (
-              <p className="text-sm text-gray-700">
-                Assigned Staff: {formData.staffInfo.staffId}
-              </p>
+              <div>
+                <p className="text-sm text-gray-700">
+                  Assigned Staff: {formData.staffInfo.staffId}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      staffInfo: undefined, // Clear the staffInfo object
+                    }));
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
             )}
           </div>
 
@@ -1119,15 +1125,45 @@ const EditJobPage = () => {
           </div>
         </form>
       </div>
-      <AssignStaffDialog
+      {/* <AssignStaffDialog
         isOpen={isAssignDialogOpen}
         onClose={() => setIsAssignDialogOpen(false)}
         staffList={staffList}
         jobToAssign={jobToAssign}
         onAssign={handleStaffAssignment}
-      />
+      /> */}
     </Layout>
   );
 };
 
 export default EditJobPage;
+
+// async function onStaffAssigned(staffId: string, jobId: string) {
+//   try {
+//       const response = await fetch("/api/jobs/assignStaff", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({ staffId, jobId }),
+//       });
+
+//       if (!response.ok) {
+//         throw new Error(`Failed to assign staff: ${response.statusText}`);
+//       }
+
+//       const data = await response.json();
+//       console.log(data.message);
+
+//       // Update the job list state to reflect the assignment
+//       setJobList((prevJobs) =>
+//         prevJobs.map((job) =>
+//           job.id === jobId
+//             ? { ...job, staffId: staffId, status: "assigned" }
+//             : job
+//         )
+//       );
+//     } catch (error) {
+//       console.error("Error assigning staff to job:", error);
+//     }
+// }

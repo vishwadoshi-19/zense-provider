@@ -319,7 +319,7 @@ const JobList = ({
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {
+                      <div className="flex space-x-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -329,10 +329,6 @@ const JobList = ({
                           <UserPlus className="h-3 w-3 mr-1" />
                           Assign
                         </Button>
-                      }
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
                         {job?.staffInfo?.staffId && (
                           <Button
                             variant="ghost"
@@ -343,6 +339,10 @@ const JobList = ({
                             <UserRoundCheck className="h-4 w-4" />
                           </Button>
                         )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
                         <Button
                           variant="ghost"
                           size="sm"

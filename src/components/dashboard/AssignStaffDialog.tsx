@@ -37,8 +37,8 @@ const AssignStaffDialog = ({
 
   useEffect(() => {
     // Filter staff to show only available staff (currentAssignment is null or undefined)
-    const filtered = staffList.filter((staff) => !staff.currentAssignment);
-    setAvailableStaff(filtered);
+    // const filtered = staffList.filter((staff) => !staff.currentAssignment);
+    setAvailableStaff(staffList);
   }, [staffList]);
 
   const handleStaffSelect = async (staffId: string) => {

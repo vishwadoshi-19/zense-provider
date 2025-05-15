@@ -1032,7 +1032,7 @@ const AddJobPage = () => {
           <div className="space-y-2">
             <h2 className="text-xl font-semibold">Staff Assignment</h2>
             {/* This will be handled by the Assign Staff Dialog */}
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
               onClick={() => handleAssignStaffClick(job as Job2)} // Pass current job data
@@ -1040,7 +1040,7 @@ const AddJobPage = () => {
             >
               <UserPlus className="h-3 w-3 mr-1" />
               Assign Staff
-            </Button>
+            </Button> */}
             {formData.staffInfo?.staffName && (
               <p className="text-sm text-gray-700">
                 Assigned Staff: {formData.staffInfo.staffName}
