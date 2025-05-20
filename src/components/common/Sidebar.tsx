@@ -36,26 +36,26 @@ const Sidebar = () => {
       path: "/jobs",
       icon: <Briefcase className="h-5 w-5" />,
     },
-    {
-      name: "Track Availability",
-      path: "/availability",
-      icon: <Calendar className="h-5 w-5" />,
-    },
-    {
-      name: "Track Work",
-      path: "/attendance",
-      icon: <Clock className="h-5 w-5" />,
-    },
+    // {
+    //   name: "Track Availability",
+    //   path: "/availability",
+    //   icon: <Calendar className="h-5 w-5" />,
+    // },
+    // {
+    //   name: "Track Work",
+    //   path: "/attendance",
+    //   icon: <Clock className="h-5 w-5" />,
+    // },
     {
       name: "Profile",
       path: "/profile",
       icon: <UserCircle className="h-5 w-5" />,
     },
-    {
-      name: "Contact Details",
-      path: "/contact",
-      icon: <Phone className="h-5 w-5" />,
-    },
+    // {
+    //   name: "Contact Details",
+    //   path: "/contact",
+    //   icon: <Phone className="h-5 w-5" />,
+    // },
   ];
 
   return (
@@ -79,7 +79,7 @@ const Sidebar = () => {
         </nav>
 
         <div className="mt-10 pt-6 border-t border-gray-200">
-          <nav className="space-y-1">
+          {/* <nav className="space-y-1">
             <Link
               href="/settings"
               className="flex items-center px-4 py-3 text-sm rounded-md text-gray-700 hover:bg-gray-100"
@@ -94,7 +94,7 @@ const Sidebar = () => {
               <HelpCircle className="h-5 w-5" />
               <span className="ml-3">Help & Support</span>
             </Link>
-          </nav>
+          </nav> */}
         </div>
       </div>
     </aside>

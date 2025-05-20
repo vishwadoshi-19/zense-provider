@@ -186,28 +186,26 @@ const StaffDetailPage = () => {
       <div>
         <div
           id="resume"
-          className="w-[210mm] h-[297mm] p-6 mx-auto bg-white shadow-sm print:shadow-none overflow-hidden"
+          className="w-[210mm] h-[297mm] px-6 py-4 mx-auto bg-white shadow-sm print:shadow-none overflow-hidden text-[10pt] leading-snug"
         >
           {/* Header */}
           <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
             <div className="flex items-center gap-4">
               <Avatar className="w-28 h-28 border-2 border-green-500 overflow-hidden">
                 <div className="w-full h-full relative">
-                  <Image
-                    src={staff?.profilePhoto || "/default-profile.png"}
+                  <img
+                    src={`/api/proxy-image?url=${encodeURIComponent(
+                      staff?.profilePhoto
+                    )}`}
                     alt="PROFILE PHOTO"
-                    width={110}
-                    height={110}
-                    // layout="fill"
-                    objectFit="cover"
-                    className="rounded-full"
+                    className="w-full h-full object-cover rounded-full"
                   />
                 </div>
               </Avatar>
               <div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <h1 className="text-3xl font-bold pr-4">
+                    <h1 className="text-2xl font-bold pr-4">
                       {staff?.name?.toUpperCase()}
                     </h1>
                     <div className="flex gap-1">
@@ -246,9 +244,11 @@ const StaffDetailPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* About Me & Contact */}
             <div className="space-y-4">
-              <Card className="p-2">
-                <CardHeader className="pb-2 pt-3">
-                  <CardTitle>About me</CardTitle>
+              <Card className="p-3 border border-gray-300 rounded-md shadow-none print:shadow-none">
+                <CardHeader className="pb-1 pt-2">
+                  <CardTitle className="text-[11pt] font-semibold">
+                    About me
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 py-2">
                   <div className="flex justify-between">
@@ -290,7 +290,7 @@ const StaffDetailPage = () => {
               </Card>
 
               {/* <Card>
-                <CardHeader className="pb-2 pt-3">
+                <CardHeader className="pb-1 pt-2">
                   <CardTitle>My Contact Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 py-2">
@@ -320,9 +320,11 @@ const StaffDetailPage = () => {
                 </CardContent>
               </Card> */}
 
-              <Card className="p-2">
-                <CardHeader className="pb-2 pt-3">
-                  <CardTitle>My Preferences</CardTitle>
+              <Card className="p-3 border border-gray-300 rounded-md shadow-none print:shadow-none">
+                <CardHeader className="pb-1 pt-2">
+                  <CardTitle className="text-[11pt] font-semibold">
+                    My Preferences
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 py-2">
                   <div className="flex justify-between">
@@ -340,9 +342,11 @@ const StaffDetailPage = () => {
                 </CardContent>
               </Card>
 
-              <Card className="p-2">
-                <CardHeader className="pb-2 pt-3">
-                  <CardTitle>My Verification</CardTitle>
+              <Card className="p-3 border border-gray-300 rounded-md shadow-none print:shadow-none">
+                <CardHeader className="pb-1 pt-2">
+                  <CardTitle className="text-[11pt] font-semibold">
+                    My Verification
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 py-2">
                   <div className="flex justify-between">
@@ -365,11 +369,13 @@ const StaffDetailPage = () => {
 
             {/* Services */}
             <div className="md:col-span-2 space-y-4">
-              <Card className="p-2">
-                <CardHeader className="pb-2 pt-3">
-                  <CardTitle>Services I offer</CardTitle>
+              <Card className="p-3 border border-gray-300 rounded-md shadow-none print:shadow-none">
+                <CardHeader className="pb-1 pt-2">
+                  <CardTitle className="text-[11pt] font-semibold">
+                    Services I offer
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-1 py-2">
+                <CardContent className="py-2">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {Object.entries(staff.services || {})
                       .filter(([category]) =>
@@ -384,26 +390,29 @@ const StaffDetailPage = () => {
                       )
                       .map(([category, services]) => (
                         <div key={category}>
-                          <h3 className="text-base font-semibold text-green-600 mb-1">
+                          <h3 className="text-base font-semibold text-green-700 mb-2">
                             {category}
                           </h3>
-                          <ul className="space-y-0.5">
+                          <ul className="space-y-1">
                             {Array.isArray(services) ? (
                               (services as string[]).map((service, index) => (
-                                <div className="flex items-center gap-2">
-                                  <Check className="text-sm text-green-600" />
-                                  <span className="text-sm">
+                                <li
+                                  key={index}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Check className="h-4 w-4 text-green-600 shrink-0" />
+                                  <span className="text-sm text-gray-800">
                                     {capitalize(service.trim())}
                                   </span>
-                                </div>
+                                </li>
                               ))
                             ) : (
-                              <>
-                                <Check className="text-sm text-green-600" />
-                                <li className="text-sm">
-                                  {services as string}
-                                </li>
-                              </>
+                              <li className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-green-600 shrink-0" />
+                                <span className="text-sm text-gray-800">
+                                  {capitalize((services as string).trim())}
+                                </span>
+                              </li>
                             )}
                           </ul>
                         </div>
@@ -412,20 +421,24 @@ const StaffDetailPage = () => {
                 </CardContent>
               </Card>
 
-              {Object.entries(staff.services || {}).filter(
+              {Object.entries(staff.services || {}).some(
                 ([category]) => !isNaN(Number(category))
-              ).length > 0 && (
-                <Card className="p-2">
-                  <CardHeader className="pb-2 pt-3">
-                    <CardTitle>I can also help you with</CardTitle>
+              ) && (
+                <Card className="p-3 border border-gray-300 rounded-md shadow-none print:shadow-none">
+                  <CardHeader className="pb-1 pt-2">
+                    <CardTitle className="text-[11pt] font-semibold">
+                      I can also help you with
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-1 py-2">
+                  <CardContent className="space-y-2 py-2">
                     {Object.entries(staff.services || {})
                       .filter(([category]) => !isNaN(Number(category)))
                       .map(([category, service]) => (
                         <div key={category} className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-green-600" />
-                          <span className="text-sm">{service as string}</span>
+                          <Check className="h-4 w-4 text-green-600 shrink-0" />
+                          <span className="text-sm text-gray-800">
+                            {capitalize((service as string).trim())}
+                          </span>
                         </div>
                       ))}
                   </CardContent>
@@ -433,9 +446,11 @@ const StaffDetailPage = () => {
               )}
             </div>
           </div>
-          <Card className="p-2 mt-4">
-            <CardHeader className="pb-2 pt-3">
-              <CardTitle>Here's what other customers say about me</CardTitle>
+          <Card className="p-3 border mt-4 border-gray-300 rounded-md shadow-none print:shadow-none">
+            <CardHeader className="pb-1 pt-2">
+              <CardTitle className="text-[11pt] font-semibold">
+                Here's what other customers say about me
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1 py-2">
               {loading ? (

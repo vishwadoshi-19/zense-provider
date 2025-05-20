@@ -48,6 +48,8 @@ import { getDoc } from "firebase/firestore";
 import { array, boolean } from "zod";
 import { te } from "date-fns/locale";
 
+const Req = () => <span className="text-red-500 text-sm">*</span>;
+
 const SERVICES = {
   Mobility: [
     "Walking assistance",
@@ -695,7 +697,9 @@ const EditStaffPage = () => {
 
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="space-y-2">
-                            <Label htmlFor="fullName">Full Name</Label>
+                            <Label htmlFor="fullName">
+                              Full Name <Req />
+                            </Label>
                             <Input
                               id="fullName"
                               name="fullName"
@@ -706,12 +710,15 @@ const EditStaffPage = () => {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="gender">Gender</Label>
+                            <Label htmlFor="gender">
+                              Gender <Req />
+                            </Label>
                             <Select
                               value={formData.gender}
                               onValueChange={(value) =>
                                 handleSelectChange("gender", value)
                               }
+                              required
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select gender" />
@@ -726,7 +733,9 @@ const EditStaffPage = () => {
 
                           {/* Profile Photo Input */}
                           <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="profilePhoto">Profile Photo</Label>
+                            <Label htmlFor="profilePhoto">
+                              Profile Photo <Req />
+                            </Label>
                             <div className="flex items-center gap-4">
                               {formData.profilePhoto ? (
                                 // Display preview of the newly selected image
@@ -754,6 +763,7 @@ const EditStaffPage = () => {
                                     handleFileChange(e, "profilePhoto")
                                   }
                                   className="flex-1"
+                                  required={!formData.profilePhotoURL}
                                 />
                                 {(formData.profilePhoto ||
                                   formData.profilePhotoURL) && (
@@ -772,13 +782,14 @@ const EditStaffPage = () => {
 
                           <div className="space-y-2">
                             <Label htmlFor="maritalStatus">
-                              Marital Status
+                              Marital Status <Req />
                             </Label>
                             <Select
                               value={formData.maritalStatus}
                               onValueChange={(value) =>
                                 handleSelectChange("maritalStatus", value)
                               }
+                              required
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select marital status" />
@@ -795,12 +806,15 @@ const EditStaffPage = () => {
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="jobRole">Job Role</Label>
+                            <Label htmlFor="jobRole">
+                              Job Role <Req />
+                            </Label>
                             <Select
                               value={formData.jobRole}
                               onValueChange={(value) =>
                                 handleSelectChange("jobRole", value)
                               }
+                              required
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select job role" />
@@ -824,12 +838,15 @@ const EditStaffPage = () => {
 
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                          <Label htmlFor="status">Staff Status</Label>
+                          <Label htmlFor="status">
+                            Staff Status <Req />
+                          </Label>
                           <Select
                             value={formData.status}
                             onValueChange={(value) =>
                               handleSelectChange("status", value)
                             }
+                            required
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select status" />
@@ -850,7 +867,9 @@ const EditStaffPage = () => {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="status">Staff Availability</Label>
+                          <Label htmlFor="status">
+                            Staff Availability <Req />
+                          </Label>
                           <Select
                             value={
                               formData.tempAvailability
@@ -863,6 +882,7 @@ const EditStaffPage = () => {
                                 tempAvailability: value === "available",
                               }))
                             }
+                            required
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select status" />
@@ -936,24 +956,30 @@ const EditStaffPage = () => {
                         <div className="grid gap-4 md:grid-cols-2">
                           {/* Date of Birth */}
                           <div className="space-y-2">
-                            <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                            <Label htmlFor="dateOfBirth">
+                              Date of Birth <Req />
+                            </Label>
                             <Input
                               id="dateOfBirth"
                               name="dateOfBirth"
                               type="date"
                               value={formData.dateOfBirth}
                               onChange={handleInputChange}
+                              required
                             />
                           </div>
 
                           {/* Religion */}
                           <div className="space-y-2">
-                            <Label htmlFor="religion">Religion</Label>
+                            <Label htmlFor="religion">
+                              Religion <Req />
+                            </Label>
                             <Select
                               value={formData.religion}
                               onValueChange={(value) =>
                                 handleSelectChange("religion", value)
                               }
+                              required
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select religion" />
@@ -985,13 +1011,14 @@ const EditStaffPage = () => {
                           <div className="grid gap-4 md:grid-cols-2">
                             <div className="space-y-2">
                               <Label htmlFor="currentAddress.street">
-                                Street
+                                Street <Req />
                               </Label>
                               <Input
                                 id="currentAddress.street"
                                 name="currentAddress.street"
                                 placeholder="Street Address"
                                 value={formData.currentAddress.street}
+                                required
                                 onChange={(e) =>
                                   setFormData((prev) => ({
                                     ...prev,
@@ -1004,12 +1031,15 @@ const EditStaffPage = () => {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="currentAddress.city">City</Label>
+                              <Label htmlFor="currentAddress.city">
+                                City <Req />
+                              </Label>
                               <Input
                                 id="currentAddress.city"
                                 name="currentAddress.city"
                                 placeholder="City"
                                 value={formData.currentAddress.city}
+                                required
                                 onChange={(e) =>
                                   setFormData((prev) => ({
                                     ...prev,
@@ -1023,13 +1053,14 @@ const EditStaffPage = () => {
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="currentAddress.state">
-                                State
+                                State <Req />
                               </Label>
                               <Input
                                 id="currentAddress.state"
                                 name="currentAddress.state"
                                 placeholder="State"
                                 value={formData.currentAddress.state}
+                                required
                                 onChange={(e) =>
                                   setFormData((prev) => ({
                                     ...prev,
@@ -1043,13 +1074,14 @@ const EditStaffPage = () => {
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="currentAddress.zip">
-                                Zip Code
+                                Zip Code <Req />
                               </Label>
                               <Input
                                 id="currentAddress.zip"
                                 name="currentAddress.zip"
                                 placeholder="Zip Code"
                                 value={formData.currentAddress.zip}
+                                required
                                 onChange={(e) =>
                                   setFormData((prev) => ({
                                     ...prev,
@@ -1096,13 +1128,16 @@ const EditStaffPage = () => {
                               <div className="grid gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
                                   <Label htmlFor="permanentAddress.street">
-                                    Street
+                                    Street <Req />
                                   </Label>
                                   <Input
                                     id="permanentAddress.street"
                                     name="permanentAddress.street"
                                     placeholder="Street Address"
                                     value={formData.permanentAddress.street}
+                                    required={
+                                      !formData.isCurrentAddressSameAsPermanent
+                                    }
                                     onChange={(e) =>
                                       setFormData((prev) => ({
                                         ...prev,
@@ -1116,13 +1151,16 @@ const EditStaffPage = () => {
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="permanentAddress.city">
-                                    City
+                                    City <Req />
                                   </Label>
                                   <Input
                                     id="permanentAddress.city"
                                     name="permanentAddress.city"
                                     placeholder="City"
                                     value={formData.permanentAddress.city}
+                                    required={
+                                      !formData.isCurrentAddressSameAsPermanent
+                                    }
                                     onChange={(e) =>
                                       setFormData((prev) => ({
                                         ...prev,
@@ -1136,13 +1174,16 @@ const EditStaffPage = () => {
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="permanentAddress.state">
-                                    State
+                                    State <Req />
                                   </Label>
                                   <Input
                                     id="permanentAddress.state"
                                     name="permanentAddress.state"
                                     placeholder="State"
                                     value={formData.permanentAddress.state}
+                                    required={
+                                      !formData.isCurrentAddressSameAsPermanent
+                                    }
                                     onChange={(e) =>
                                       setFormData((prev) => ({
                                         ...prev,
@@ -1156,13 +1197,16 @@ const EditStaffPage = () => {
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="permanentAddress.zip">
-                                    Zip Code
+                                    Zip Code <Req />
                                   </Label>
                                   <Input
                                     id="permanentAddress.zip"
                                     name="permanentAddress.zip"
                                     placeholder="Zip Code"
                                     value={formData.permanentAddress.zip}
+                                    required={
+                                      !formData.isCurrentAddressSameAsPermanent
+                                    }
                                     onChange={(e) =>
                                       setFormData((prev) => ({
                                         ...prev,
@@ -1285,12 +1329,15 @@ const EditStaffPage = () => {
 
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="space-y-2">
-                            <Label htmlFor="qualification">Qualification</Label>
+                            <Label htmlFor="qualification">
+                              Qualification <Req />
+                            </Label>
                             <Select
                               value={formData.qualification}
                               onValueChange={(value) =>
                                 handleSelectChange("qualification", value)
                               }
+                              required
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select qualification" />
@@ -1313,12 +1360,15 @@ const EditStaffPage = () => {
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="experience">Experience</Label>
+                            <Label htmlFor="experience">
+                              Experience <Req />{" "}
+                            </Label>
                             <Select
                               value={formData.experience}
                               onValueChange={(value) =>
                                 handleSelectChange("experience", value)
                               }
+                              required
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select experience" />
@@ -1337,7 +1387,7 @@ const EditStaffPage = () => {
 
                           <div className="space-y-2">
                             <Label htmlFor="certificate">
-                              Education Certificate
+                              Education Certificate <Req />
                             </Label>
                             <div className="flex items-center gap-2">
                               <Input
@@ -1347,6 +1397,7 @@ const EditStaffPage = () => {
                                 onChange={(e) =>
                                   handleFileChange(e, "certificate")
                                 }
+                                required={!formData.certificateURL}
                                 className="flex-1"
                               />
                               {formData.certificate ? (
@@ -1368,74 +1419,6 @@ const EditStaffPage = () => {
                                 </div>
                               ) : null}
                             </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-medium">
-                          Shift Preferences
-                        </h3>
-
-                        <div className="space-y-3">
-                          <Label>Preferred Shifts</Label>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                            {[
-                              "Morning (6AM-2PM)",
-                              "Afternoon (2PM-10PM)",
-                              "Night (10PM-6AM)",
-                              "Full Day (9AM-6PM)",
-                              "24 Hours",
-                              "Part Time",
-                              "Flexible Hours",
-                            ].map((shift) => (
-                              <div
-                                key={shift}
-                                className="flex items-center space-x-2"
-                              >
-                                <Checkbox
-                                  id={`shift-${shift}`}
-                                  checked={
-                                    Array.isArray(formData.preferredShifts) &&
-                                    formData.preferredShifts.some(
-                                      (s) =>
-                                        s.toLowerCase() === shift.toLowerCase()
-                                    )
-                                  }
-                                  onCheckedChange={(checked) => {
-                                    setFormData((prev) => {
-                                      if (checked) {
-                                        return {
-                                          ...prev,
-                                          preferredShifts: [
-                                            ...(prev.preferredShifts || []),
-                                            shift,
-                                          ],
-                                        };
-                                      } else {
-                                        return {
-                                          ...prev,
-                                          preferredShifts:
-                                            prev.preferredShifts.filter(
-                                              (s) =>
-                                                s.toLowerCase() !==
-                                                shift.toLowerCase()
-                                            ),
-                                        };
-                                      }
-                                    });
-                                  }}
-                                />
-                                <Label
-                                  htmlFor={`shift-${shift}`}
-                                  className="font-normal"
-                                >
-                                  {shift}
-                                </Label>
-                              </div>
-                            ))}
                           </div>
                         </div>
                       </div>
@@ -1565,13 +1548,14 @@ const EditStaffPage = () => {
                           {/* Provider Agency */}
                           <div className="space-y-2">
                             <Label htmlFor="providerAgency">
-                              Provider Agency
+                              Provider Agency <Req />
                             </Label>
                             <Select
                               value={formData.providerId}
                               onValueChange={(value) =>
                                 handleSelectChange("providerId", value)
                               }
+                              required
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select agency" />
@@ -1584,7 +1568,9 @@ const EditStaffPage = () => {
 
                           {/* Districts */}
                           <div className="space-y-3">
-                            <Label>Districts to Serve</Label>
+                            <Label>
+                              Districts to Serve <Req />
+                            </Label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                               {DISTRICTS.map((district) => (
                                 <div
@@ -1592,6 +1578,7 @@ const EditStaffPage = () => {
                                   className="flex items-center space-x-2"
                                 >
                                   <Checkbox
+                                    required
                                     id={`district-${district}`}
                                     checked={
                                       Array.isArray(formData.district) &&
@@ -1670,9 +1657,12 @@ const EditStaffPage = () => {
                           {Array.isArray(formData.district) &&
                             formData.district.length > 0 && (
                               <div className="space-y-3 md:col-span-2">
-                                <Label>Subdistricts to Serve</Label>
+                                <Label>
+                                  Subdistricts to Serve <Req />
+                                </Label>
                                 <div className="flex items-center space-x-2 mb-2">
                                   <Checkbox
+                                    required
                                     id="all-subdistricts"
                                     checked={
                                       Array.isArray(formData.district) &&
@@ -1741,7 +1731,7 @@ const EditStaffPage = () => {
                                     htmlFor="all-subdistricts"
                                     className="font-normal"
                                   >
-                                    Select All Subdistricts
+                                    Select All Subdistricts <Req />
                                   </Label>
                                 </div>
 
@@ -1762,6 +1752,7 @@ const EditStaffPage = () => {
                                               className="flex items-center space-x-2"
                                             >
                                               <Checkbox
+                                                required
                                                 id={`subdistrict-${subdistrict}`}
                                                 checked={
                                                   Array.isArray(
@@ -1838,13 +1829,14 @@ const EditStaffPage = () => {
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="space-y-2">
                             <Label htmlFor="foodPreference">
-                              Food Preference
+                              Food Preference <Req />
                             </Label>
                             <Select
                               value={formData.foodPreference}
                               onValueChange={(value) =>
                                 handleSelectChange("foodPreference", value)
                               }
+                              required
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select food preference" />
@@ -1858,12 +1850,15 @@ const EditStaffPage = () => {
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="smoking">Smoking Habit</Label>
+                            <Label htmlFor="smoking">
+                              Smoking Habit <Req />
+                            </Label>
                             <RadioGroup
                               value={formData.smoking}
                               onValueChange={(value) =>
                                 handleSelectChange("smoking", value)
                               }
+                              required
                             >
                               <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="no" id="smoking-no" />
@@ -1885,39 +1880,74 @@ const EditStaffPage = () => {
                               </div>
                             </RadioGroup>
                           </div>
+                        </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="carryFood">
-                              Can carry own food for 12hr shift?
-                            </Label>
-                            <RadioGroup
-                              value={formData.carryFood}
-                              onValueChange={(value) =>
-                                handleSelectChange("carryFood", value)
-                              }
-                            >
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem
-                                  value="yes"
-                                  id="carryFood-yes"
-                                />
-                                <Label
-                                  htmlFor="carryFood-yes"
-                                  className="font-normal"
+                        <Separator />
+
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">
+                            Shift Preferences
+                          </h3>
+
+                          <div className="space-y-3">
+                            <Label>Preferred Shifts</Label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {[
+                                "Morning (6AM-2PM)",
+                                "Afternoon (2PM-10PM)",
+                                "Night (10PM-6AM)",
+                                "Full Day (9AM-6PM)",
+                                "24 Hours",
+                                "Part Time",
+                                "Flexible Hours",
+                              ].map((shift) => (
+                                <div
+                                  key={shift}
+                                  className="flex items-center space-x-2"
                                 >
-                                  Yes
-                                </Label>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="no" id="carryFood-no" />
-                                <Label
-                                  htmlFor="carryFood-no"
-                                  className="font-normal"
-                                >
-                                  No
-                                </Label>
-                              </div>
-                            </RadioGroup>
+                                  <Checkbox
+                                    id={`shift-${shift}`}
+                                    checked={
+                                      Array.isArray(formData.preferredShifts) &&
+                                      formData.preferredShifts.some(
+                                        (s) =>
+                                          s.toLowerCase() ===
+                                          shift.toLowerCase()
+                                      )
+                                    }
+                                    onCheckedChange={(checked) => {
+                                      setFormData((prev) => {
+                                        if (checked) {
+                                          return {
+                                            ...prev,
+                                            preferredShifts: [
+                                              ...(prev.preferredShifts || []),
+                                              shift,
+                                            ],
+                                          };
+                                        } else {
+                                          return {
+                                            ...prev,
+                                            preferredShifts:
+                                              prev.preferredShifts.filter(
+                                                (s) =>
+                                                  s.toLowerCase() !==
+                                                  shift.toLowerCase()
+                                              ),
+                                          };
+                                        }
+                                      });
+                                    }}
+                                  />
+                                  <Label
+                                    htmlFor={`shift-${shift}`}
+                                    className="font-normal"
+                                  >
+                                    {shift}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
 
@@ -1936,9 +1966,7 @@ const EditStaffPage = () => {
                         </div>
                       </div>
 
-                      <Separator />
-
-                      <div className="space-y-4">
+                      {/* <div className="space-y-4">
                         <h3 className="text-lg font-medium">Testimonial</h3>
 
                         <div className="grid gap-4 md:grid-cols-2">
@@ -1985,7 +2013,7 @@ const EditStaffPage = () => {
                             )}
                           </div>
                         </div>
-                      </div>
+                      </div> */}
                     </TabsContent>
 
                     {/* Bank Details Tab */}
@@ -2105,20 +2133,29 @@ const EditStaffPage = () => {
 
                         <div className="space-y-4">
                           <div className="space-y-2">
-                            <Label htmlFor="aadharNumber">Aadhar Number</Label>
+                            <Label htmlFor="aadharNumber">
+                              Aadhar Number <Req />
+                            </Label>
                             <Input
                               id="aadharNumber"
                               name="aadharNumber"
                               placeholder="Enter 12-digit Aadhar number"
                               value={formData.aadharNumber}
                               onChange={handleInputChange}
+                              minLength={12}
+                              type="number"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               maxLength={12}
+                              required
                             />
                           </div>
 
                           <div className="grid gap-4 md:grid-cols-2">
                             <div className="space-y-2">
-                              <Label htmlFor="aadharFront">Aadhar Front</Label>
+                              <Label htmlFor="aadharFront">
+                                Aadhar Front <Req />
+                              </Label>
                               <div className="flex items-center gap-2">
                                 <Input
                                   id="aadharFront"
@@ -2127,6 +2164,7 @@ const EditStaffPage = () => {
                                   onChange={(e) =>
                                     handleFileChange(e, "aadharFront")
                                   }
+                                  required={!formData.aadharFrontURL}
                                   className="flex-1"
                                 />
                                 {formData.aadharFront ? (
@@ -2160,7 +2198,9 @@ const EditStaffPage = () => {
                             </div>
 
                             <div className="space-y-2">
-                              <Label htmlFor="aadharBack">Aadhar Back</Label>
+                              <Label htmlFor="aadharBack">
+                                Aadhar Back <Req />
+                              </Label>
                               <div className="flex items-center gap-2">
                                 <Input
                                   id="aadharBack"
@@ -2169,6 +2209,7 @@ const EditStaffPage = () => {
                                   onChange={(e) =>
                                     handleFileChange(e, "aadharBack")
                                   }
+                                  required={!formData.aadharBackURL}
                                   className="flex-1"
                                 />
                                 {formData.aadharBack ? (

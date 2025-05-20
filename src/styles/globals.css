@@ -90,3 +90,24 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+@media print {
+  html,
+  body {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
+  #resume {
+    box-shadow: none !important;
+  }
+
+  * {
+    font-family: "Inter", sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+  }
+}

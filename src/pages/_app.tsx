@@ -3,8 +3,13 @@ import type { AppProps } from "next/app";
 import { AuthProvider } from "@/components/auth/AuthContext";
 import OfflineAlert from "@/components/common/OfflineAlert";
 import Head from "next/head";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { useRouter } from "next/router";
 
 export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const unprotectedRoutes = ["/login", "/signup"];
+
   return (
     <AuthProvider>
       <Head>
@@ -18,7 +23,13 @@ export default function App({ Component, pageProps }: AppProps) {
           rel="stylesheet"
         />
       </Head>
-      <Component {...pageProps} />
+      {unprotectedRoutes.includes(router.pathname) ? (
+        <Component {...pageProps} />
+      ) : (
+        <ProtectedRoute>
+          <Component {...pageProps} />
+        </ProtectedRoute>
+      )}
       <OfflineAlert />
     </AuthProvider>
   );

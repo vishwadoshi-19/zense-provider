@@ -40,10 +40,10 @@ const Header = () => {
 
         <div className="hidden md:flex items-center space-x-4">
           <div className="relative">
-            <Button variant="ghost" size="sm" className="relative">
+            {/* <Button variant="ghost" size="sm" className="relative">
               <Bell className="h-5 w-5" />
               <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
-            </Button>
+            </Button> */}
           </div>
 
           <div className="relative">
@@ -65,12 +65,12 @@ const Header = () => {
                 >
                   Profile
                 </Link>
-                <Link
+                {/* <Link
                   href="/settings"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Settings
-                </Link>
+                </Link> */}
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -95,9 +95,9 @@ const Header = () => {
             <Link href="/profile" className="block py-2 text-gray-700">
               Profile
             </Link>
-            <Link href="/settings" className="block py-2 text-gray-700">
+            {/* <Link href="/settings" className="block py-2 text-gray-700">
               Settings
-            </Link>
+            </Link> */}
             <button
               onClick={handleLogout}
               className="block w-full text-left py-2 text-gray-700"

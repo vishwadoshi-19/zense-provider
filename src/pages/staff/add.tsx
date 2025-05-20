@@ -74,6 +74,8 @@ const SERVICES = {
   ],
 };
 
+const Req = () => <span className="text-red-500 text-sm">*</span>;
+
 type District = "delhi" | "mumbai" | "bangalore";
 
 const DISTRICTS: string[] = ["Delhi", "Mumbai", "Bangalore"];
@@ -120,6 +122,8 @@ const SUB_DISTRICTS: Record<District, string[]> = {
     "Electronic City",
   ],
 };
+
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const AddStaffPage = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -239,27 +243,44 @@ const AddStaffPage = () => {
   // Handle checkbox changes
   const handleCheckboxChange = (
     category: string,
-    service: string,
+    value: string,
     checked: boolean
   ) => {
     setFormData((prev) => {
+      // Handle array fields (like preferredShifts, district, languages)
+      if (
+        category === "preferredShifts" ||
+        category === "district" ||
+        category === "subDistricts" ||
+        category === "languages"
+      ) {
+        const arr = Array.isArray(prev[category])
+          ? [...(prev[category] as string[])]
+          : [];
+        if (checked) {
+          if (!arr.includes(value)) arr.push(value);
+        } else {
+          const idx = arr.indexOf(value);
+          if (idx > -1) arr.splice(idx, 1);
+        }
+        return { ...prev, [category]: arr };
+      }
+
+      // Handle nested object (services)
       const updatedServices = { ...prev.services };
 
       if (checked) {
-        // Add the service to the category array
         if (!updatedServices[category]) {
           updatedServices[category] = [];
         }
-        if (!updatedServices[category].includes(service.toLowerCase())) {
-          updatedServices[category].push(service.toLowerCase());
+        if (!updatedServices[category].includes(value)) {
+          updatedServices[category].push(value);
         }
       } else {
-        // Remove the service from the category array
         if (updatedServices[category]) {
           updatedServices[category] = updatedServices[category].filter(
-            (item) => item !== service.toLowerCase()
+            (item) => item !== value
           );
-          // Optional: Remove the category key if the array becomes empty
           if (updatedServices[category].length === 0) {
             delete updatedServices[category];
           }
@@ -535,24 +556,27 @@ const AddStaffPage = () => {
   };
   const router = useRouter();
   return (
-    <Layout>
-      <div className="container mx-auto py-10 px-4">
-        <h1 className="text-3xl font-bold mb-6">Provider Staff Registration</h1>
+    <ProtectedRoute>
+      <Layout>
+        <div className="container mx-auto py-10 px-4">
+          <h1 className="text-3xl font-bold mb-6">
+            Provider Staff Registration
+          </h1>
 
-        {isSuccess ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center justify-center py-10">
-                <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
-                <h2 className="text-2xl font-semibold mb-2">
-                  Registration Successful
-                </h2>
-                <p className="text-muted-foreground text-center mb-6">
-                  The staff member has been successfully registered in the
-                  system.
-                </p>
-                <div className="flex space-x-4">
-                  {/* <Button
+          {isSuccess ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center justify-center py-10">
+                  <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
+                  <h2 className="text-2xl font-semibold mb-2">
+                    Registration Successful
+                  </h2>
+                  <p className="text-muted-foreground text-center mb-6">
+                    The staff member has been successfully registered in the
+                    system.
+                  </p>
+                  <div className="flex space-x-4">
+                    {/* <Button
                     onClick={() => {
                       setIsSuccess(false);
                       setPhoneNumber("");
@@ -627,620 +651,671 @@ const AddStaffPage = () => {
                   >
                     Register Another Staff
                   </Button> */}
-                  <Button
-                    onClick={() => {
-                      router.push("/staff");
-                    }}
-                  >
-                    Back to all Staff
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            {!isUserCreated ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Phone Number</CardTitle>
-                  <CardDescription>
-                    Enter the staff member's phone number to create a user
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phoneNumber">Phone Number</Label>
-                      <div className="flex gap-2">
-                        {" "}
-                        {/* Added gap for button */}
-                        <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
-                          +91
-                        </div>
-                        <Input
-                          id="phoneNumber"
-                          placeholder="Enter 10-digit phone number"
-                          value={phoneNumber}
-                          onChange={handlePhoneNumberChange}
-                          className="rounded-l-none flex-grow" // Allow input to grow
-                          maxLength={10}
-                          required
-                        />
-                        <Button
-                          type="button"
-                          onClick={handleCreateUser}
-                          disabled={isLoading || phoneNumber.length !== 10}
-                        >
-                          {isLoading ? "Creating User..." : "Create User"}
-                        </Button>
-                      </div>
-                    </div>
+                    <Button
+                      onClick={() => {
+                        router.push("/staff");
+                      }}
+                    >
+                      Back to all Staff
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <form onSubmit={handleSubmit}>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {!isUserCreated ? (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Staff Registration Form</CardTitle>
+                    <CardTitle>Phone Number</CardTitle>
                     <CardDescription>
-                      Fill in the details to register a new staff member
+                      Enter the staff member's phone number to create a user
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Tabs value={activeTab} onValueChange={setActiveTab}>
-                      <TabsList className="w-full flex flex-wrap gap-2 mb-6">
-                        <TabsTrigger
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phoneNumber">Phone Number</Label>
+                        <div className="flex gap-2">
+                          {" "}
+                          {/* Added gap for button */}
+                          <div className="flex items-center px-3 bg-muted border border-r-0 rounded-l-md">
+                            +91
+                          </div>
+                          <Input
+                            id="phoneNumber"
+                            placeholder="Enter 10-digit phone number"
+                            value={phoneNumber}
+                            onChange={handlePhoneNumberChange}
+                            className="rounded-l-none flex-grow" // Allow input to grow
+                            minLength={10}
+                            maxLength={10}
+                            required
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleCreateUser}
+                            disabled={isLoading || phoneNumber.length !== 10}
+                          >
+                            {isLoading ? "Creating User..." : "Create User"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <form onSubmit={handleSubmit}>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Staff Registration Form</CardTitle>
+                      <CardDescription>
+                        Fill in the details to register a new staff member
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Tabs value={activeTab} onValueChange={setActiveTab}>
+                        <TabsList className="w-full flex flex-wrap gap-2 mb-6">
+                          <TabsTrigger
+                            value="personal-info"
+                            className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                          >
+                            Personal Info
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="other-details"
+                            className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                          >
+                            Other Details
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="professional"
+                            className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                          >
+                            Professional
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="agency-location"
+                            className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                          >
+                            Agency & Location
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="preferences"
+                            className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                          >
+                            Preferences
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="bank-details"
+                            className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                          >
+                            Bank Details
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="documents"
+                            className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                          >
+                            Documents
+                          </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent
                           value="personal-info"
-                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
+                          className="space-y-6"
                         >
-                          Personal Info
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="other-details"
-                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
-                        >
-                          Other Details
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="professional"
-                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
-                        >
-                          Professional
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="agency-location"
-                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
-                        >
-                          Agency & Location
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="preferences"
-                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
-                        >
-                          Preferences
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="bank-details"
-                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
-                        >
-                          Bank Details
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="documents"
-                          className="flex-1 text-xs md:text-sm whitespace-nowrap"
-                        >
-                          Documents
-                        </TabsTrigger>
-                      </TabsList>
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-medium">
+                              Personal Information
+                            </h3>
 
-                      <TabsContent value="personal-info" className="space-y-6">
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">
-                            Personal Information
-                          </h3>
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="fullName">
+                                  Full Name <Req />{" "}
+                                </Label>
+                                <Input
+                                  id="fullName"
+                                  name="fullName"
+                                  placeholder="Enter full name"
+                                  value={formData.fullName}
+                                  onChange={handleInputChange}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="gender">
+                                  Gender <Req />
+                                </Label>
+                                <Select
+                                  value={formData.gender}
+                                  onValueChange={(value) =>
+                                    handleSelectChange("gender", value)
+                                  }
+                                  required
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select gender" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="male">Male</SelectItem>
+                                    <SelectItem value="female">
+                                      Female
+                                    </SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label htmlFor="fullName">Full Name</Label>
-                              <Input
-                                id="fullName"
-                                name="fullName"
-                                placeholder="Enter full name"
-                                value={formData.fullName}
-                                onChange={handleInputChange}
-                                required
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="gender">Gender</Label>
-                              <Select
-                                value={formData.gender}
-                                onValueChange={(value) =>
-                                  handleSelectChange("gender", value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select gender" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="male">Male</SelectItem>
-                                  <SelectItem value="female">Female</SelectItem>
-                                  <SelectItem value="other">Other</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* Profile Photo Input */}
-                            <div className="space-y-2 md:col-span-2">
-                              <Label htmlFor="profilePhoto">
-                                Profile Photo
-                              </Label>
-                              <div className="flex items-center gap-4">
-                                {formData.profilePhoto && (
-                                  // Display preview of the selected image
-                                  <img
-                                    src={URL.createObjectURL(
-                                      formData.profilePhoto
-                                    )}
-                                    alt="Profile Preview"
-                                    className="w-24 h-24 object-cover rounded-md"
-                                  />
-                                )}
-                                <div className="flex-1 space-y-2">
-                                  <Input
-                                    id="profilePhoto"
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleFileChange(e, "profilePhoto")
-                                    }
-                                    className="flex-1"
-                                  />
+                              {/* Profile Photo Input */}
+                              <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="profilePhoto">
+                                  Profile Photo <Req />
+                                </Label>
+                                <div className="flex items-center gap-4">
                                   {formData.profilePhoto && (
-                                    <div className="text-sm text-green-600 flex items-center gap-1">
-                                      <CheckCircle2 className="h-4 w-4" />
-                                      <span>Selected</span>
-                                    </div>
+                                    // Display preview of the selected image
+                                    <img
+                                      src={URL.createObjectURL(
+                                        formData.profilePhoto
+                                      )}
+                                      alt="Profile Preview"
+                                      className="w-24 h-24 object-cover rounded-md"
+                                    />
                                   )}
+                                  <div className="flex-1 space-y-2">
+                                    <Input
+                                      id="profilePhoto"
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) =>
+                                        handleFileChange(e, "profilePhoto")
+                                      }
+                                      className="flex-1"
+                                      required
+                                    />
+                                    {formData.profilePhoto && (
+                                      <div className="text-sm text-green-600 flex items-center gap-1">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        <span>Selected</span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            <div className="space-y-2">
-                              <Label htmlFor="maritalStatus">
-                                Marital Status
-                              </Label>
-                              <Select
-                                value={formData.maritalStatus}
-                                onValueChange={(value) =>
-                                  handleSelectChange("maritalStatus", value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select marital status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="single">Single</SelectItem>
-                                  <SelectItem value="married">
-                                    Married
-                                  </SelectItem>
-                                  <SelectItem value="divorced">
-                                    Divorced
-                                  </SelectItem>
-                                  <SelectItem value="widowed">
-                                    Widowed
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="maritalStatus">
+                                  Marital Status <Req />
+                                </Label>
+                                <Select
+                                  value={formData.maritalStatus}
+                                  onValueChange={(value) =>
+                                    handleSelectChange("maritalStatus", value)
+                                  }
+                                  required
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select marital status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="single">
+                                      Single
+                                    </SelectItem>
+                                    <SelectItem value="married">
+                                      Married
+                                    </SelectItem>
+                                    <SelectItem value="divorced">
+                                      Divorced
+                                    </SelectItem>
+                                    <SelectItem value="widowed">
+                                      Widowed
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                            <div className="space-y-2">
-                              <Label htmlFor="jobRole">Job Role</Label>
-                              <Select
-                                value={formData.jobRole}
-                                onValueChange={(value) =>
-                                  handleSelectChange("jobRole", value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select job role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="nurse">Nurse</SelectItem>
-                                  {/* <SelectItem value="caregiver">
+                              <div className="space-y-2">
+                                <Label htmlFor="jobRole">
+                                  Job Role <Req />
+                                </Label>
+                                <Select
+                                  value={formData.jobRole}
+                                  onValueChange={(value) =>
+                                    handleSelectChange("jobRole", value)
+                                  }
+                                  required
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select job role" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="nurse">Nurse</SelectItem>
+                                    {/* <SelectItem value="caregiver">
                                     Caregiver
                                   </SelectItem>
                                   <SelectItem value="physiotherapist">
                                     Physiotherapist
                                   </SelectItem> */}
-                                  <SelectItem value="attendant">
-                                    Attendant
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">
-                            Wages Information
-                          </h3>
-
-                          <div className="grid gap-4 md:grid-cols-3">
-                            <div className="space-y-2">
-                              <Label htmlFor="lessThan5Hours">
-                                Less than 5 hours (₹)
-                              </Label>
-                              <Input
-                                id="lessThan5Hours"
-                                name="lessThan5Hours"
-                                type="number"
-                                placeholder="Enter amount"
-                                value={formData.lessThan5Hours}
-                                onChange={handleInputChange}
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="hours12">
-                                12 hours shift (₹)
-                              </Label>
-                              <Input
-                                id="hours12"
-                                name="hours12"
-                                type="number"
-                                placeholder="Enter amount"
-                                value={formData.hours12}
-                                onChange={handleInputChange}
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="hours24">
-                                24 hours shift (₹)
-                              </Label>
-                              <Input
-                                id="hours24"
-                                name="hours24"
-                                type="number"
-                                placeholder="Enter amount"
-                                value={formData.hours24}
-                                onChange={handleInputChange}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      {/* Other Details Tab */}
-                      <TabsContent value="other-details" className="space-y-6">
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">Other Details</h3>
-
-                          <div className="grid gap-4 md:grid-cols-2">
-                            {/* Date of Birth */}
-                            <div className="space-y-2">
-                              <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                              <Input
-                                id="dateOfBirth"
-                                name="dateOfBirth"
-                                type="date"
-                                value={formData.dateOfBirth}
-                                onChange={handleInputChange}
-                              />
-                            </div>
-
-                            {/* Religion */}
-                            <div className="space-y-2">
-                              <Label htmlFor="religion">Religion</Label>
-                              <Select
-                                value={formData.religion}
-                                onValueChange={(value) =>
-                                  handleSelectChange("religion", value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select religion" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="hindu">Hindu</SelectItem>
-                                  <SelectItem value="muslim">Muslim</SelectItem>
-                                  <SelectItem value="christian">
-                                    Christian
-                                  </SelectItem>
-                                  <SelectItem value="sikh">Sikh</SelectItem>
-                                  <SelectItem value="buddhist">
-                                    Buddhist
-                                  </SelectItem>
-                                  <SelectItem value="jain">Jain</SelectItem>
-                                  <SelectItem value="other">Other</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-
-                          <Separator />
-
-                          {/* Current Address */}
-                          <div className="space-y-4">
-                            <h4 className="text-md font-medium">
-                              Current Address
-                            </h4>
-                            <div className="grid gap-4 md:grid-cols-2">
-                              <div className="space-y-2">
-                                <Label htmlFor="currentAddress.street">
-                                  Street
-                                </Label>
-                                <Input
-                                  id="currentAddress.street"
-                                  name="currentAddress.street"
-                                  placeholder="Street Address"
-                                  value={formData.currentAddress.street}
-                                  onChange={(e) =>
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      currentAddress: {
-                                        ...prev.currentAddress,
-                                        street: e.target.value,
-                                      },
-                                    }))
-                                  }
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="currentAddress.city">
-                                  City
-                                </Label>
-                                <Input
-                                  id="currentAddress.city"
-                                  name="currentAddress.city"
-                                  placeholder="City"
-                                  value={formData.currentAddress.city}
-                                  onChange={(e) =>
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      currentAddress: {
-                                        ...prev.currentAddress,
-                                        city: e.target.value,
-                                      },
-                                    }))
-                                  }
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="currentAddress.state">
-                                  State
-                                </Label>
-                                <Input
-                                  id="currentAddress.state"
-                                  name="currentAddress.state"
-                                  placeholder="State"
-                                  value={formData.currentAddress.state}
-                                  onChange={(e) =>
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      currentAddress: {
-                                        ...prev.currentAddress,
-                                        state: e.target.value,
-                                      },
-                                    }))
-                                  }
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="currentAddress.zip">
-                                  Zip Code
-                                </Label>
-                                <Input
-                                  id="currentAddress.zip"
-                                  name="currentAddress.zip"
-                                  placeholder="Zip Code"
-                                  value={formData.currentAddress.zip}
-                                  onChange={(e) =>
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      currentAddress: {
-                                        ...prev.currentAddress,
-                                        zip: e.target.value,
-                                      },
-                                    }))
-                                  }
-                                />
+                                    <SelectItem value="attendant">
+                                      Attendant
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
                             </div>
                           </div>
 
                           <Separator />
 
-                          {/* Permanent Address */}
                           <div className="space-y-4">
-                            <div className="flex items-center space-x-2 mb-4">
-                              <Checkbox
-                                id="isCurrentAddressSameAsPermanent"
-                                checked={
-                                  formData.isCurrentAddressSameAsPermanent
-                                }
-                                onCheckedChange={(checked) =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    isCurrentAddressSameAsPermanent:
-                                      checked as boolean,
-                                  }))
-                                }
-                              />
-                              <Label
-                                htmlFor="isCurrentAddressSameAsPermanent"
-                                className="font-normal"
-                              >
-                                Permanent Address is same as Current Address
-                              </Label>
-                            </div>
+                            <h3 className="text-lg font-medium">
+                              Wages Information
+                            </h3>
 
-                            {!formData.isCurrentAddressSameAsPermanent && (
-                              <>
-                                <h4 className="text-md font-medium">
-                                  Permanent Address
-                                </h4>
-                                <div className="grid gap-4 md:grid-cols-2">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="permanentAddress.street">
-                                      Street
-                                    </Label>
-                                    <Input
-                                      id="permanentAddress.street"
-                                      name="permanentAddress.street"
-                                      placeholder="Street Address"
-                                      value={formData.permanentAddress.street}
-                                      onChange={(e) =>
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          permanentAddress: {
-                                            ...prev.permanentAddress,
-                                            street: e.target.value,
-                                          },
-                                        }))
-                                      }
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="permanentAddress.city">
-                                      City
-                                    </Label>
-                                    <Input
-                                      id="permanentAddress.city"
-                                      name="permanentAddress.city"
-                                      placeholder="City"
-                                      value={formData.permanentAddress.city}
-                                      onChange={(e) =>
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          permanentAddress: {
-                                            ...prev.permanentAddress,
-                                            city: e.target.value,
-                                          },
-                                        }))
-                                      }
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="permanentAddress.state">
-                                      State
-                                    </Label>
-                                    <Input
-                                      id="permanentAddress.state"
-                                      name="permanentAddress.state"
-                                      placeholder="State"
-                                      value={formData.permanentAddress.state}
-                                      onChange={(e) =>
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          permanentAddress: {
-                                            ...prev.permanentAddress,
-                                            state: e.target.value,
-                                          },
-                                        }))
-                                      }
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="permanentAddress.zip">
-                                      Zip Code
-                                    </Label>
-                                    <Input
-                                      id="permanentAddress.zip"
-                                      name="permanentAddress.zip"
-                                      placeholder="Zip Code"
-                                      value={formData.permanentAddress.zip}
-                                      onChange={(e) =>
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          permanentAddress: {
-                                            ...prev.permanentAddress,
-                                            zip: e.target.value,
-                                          },
-                                        }))
-                                      }
-                                    />
-                                  </div>
-                                </div>
-                              </>
-                            )}
-                          </div>
-
-                          <Separator />
-
-                          {/* Verification Status */}
-                          <div className="space-y-4">
-                            <h4 className="text-md font-medium">
-                              Verification Status
-                            </h4>
                             <div className="grid gap-4 md:grid-cols-3">
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id="isActive"
-                                  checked={formData.isActive}
-                                  onCheckedChange={(checked) =>
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      isActive: checked as boolean,
-                                    }))
-                                  }
-                                />
-                                <Label
-                                  htmlFor="isActive"
-                                  className="font-normal"
-                                >
-                                  Is Active
+                              <div className="space-y-2">
+                                <Label htmlFor="lessThan5Hours">
+                                  Less than 5 hours (₹)
                                 </Label>
+                                <Input
+                                  id="lessThan5Hours"
+                                  name="lessThan5Hours"
+                                  type="number"
+                                  placeholder="Enter amount"
+                                  value={formData.lessThan5Hours}
+                                  onChange={handleInputChange}
+                                />
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id="aadharVerified"
-                                  checked={formData.aadharVerified}
-                                  onCheckedChange={(checked) =>
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      aadharVerified: checked as boolean,
-                                    }))
-                                  }
-                                />
-                                <Label
-                                  htmlFor="aadharVerified"
-                                  className="font-normal"
-                                >
-                                  Aadhar Verified
+
+                              <div className="space-y-2">
+                                <Label htmlFor="hours12">
+                                  12 hours shift (₹)
                                 </Label>
+                                <Input
+                                  id="hours12"
+                                  name="hours12"
+                                  type="number"
+                                  placeholder="Enter amount"
+                                  value={formData.hours12}
+                                  onChange={handleInputChange}
+                                />
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id="policeVerified"
-                                  checked={formData.policeVerified}
-                                  onCheckedChange={(checked) =>
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      policeVerified: checked as boolean,
-                                    }))
-                                  }
-                                />
-                                <Label
-                                  htmlFor="policeVerified"
-                                  className="font-normal"
-                                >
-                                  Police Verified
+
+                              <div className="space-y-2">
+                                <Label htmlFor="hours24">
+                                  24 hours shift (₹)
                                 </Label>
+                                <Input
+                                  id="hours24"
+                                  name="hours24"
+                                  type="number"
+                                  placeholder="Enter amount"
+                                  value={formData.hours24}
+                                  onChange={handleInputChange}
+                                />
                               </div>
                             </div>
                           </div>
+                        </TabsContent>
 
-                          <Separator />
+                        {/* Other Details Tab */}
+                        <TabsContent
+                          value="other-details"
+                          className="space-y-6"
+                        >
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-medium">
+                              Other Details
+                            </h3>
 
-                          {/* Availability */}
-                          {/* <div className="space-y-2">
+                            <div className="grid gap-4 md:grid-cols-2">
+                              {/* Date of Birth */}
+                              <div className="space-y-2">
+                                <Label htmlFor="dateOfBirth">
+                                  Date of Birth <Req />
+                                </Label>
+                                <Input
+                                  id="dateOfBirth"
+                                  name="dateOfBirth"
+                                  type="date"
+                                  value={formData.dateOfBirth}
+                                  onChange={handleInputChange}
+                                  required
+                                />
+                              </div>
+
+                              {/* Religion */}
+                              <div className="space-y-2">
+                                <Label htmlFor="religion">
+                                  Religion <Req />
+                                </Label>
+                                <Select
+                                  value={formData.religion}
+                                  onValueChange={(value) =>
+                                    handleSelectChange("religion", value)
+                                  }
+                                  required
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select religion" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="hindu">Hindu</SelectItem>
+                                    <SelectItem value="muslim">
+                                      Muslim
+                                    </SelectItem>
+                                    <SelectItem value="christian">
+                                      Christian
+                                    </SelectItem>
+                                    <SelectItem value="sikh">Sikh</SelectItem>
+                                    <SelectItem value="buddhist">
+                                      Buddhist
+                                    </SelectItem>
+                                    <SelectItem value="jain">Jain</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            <Separator />
+
+                            {/* Current Address */}
+                            <div className="space-y-4">
+                              <h4 className="text-md font-medium">
+                                Current Address
+                              </h4>
+                              <div className="grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                  <Label htmlFor="currentAddress.street">
+                                    Street <Req />
+                                  </Label>
+                                  <Input
+                                    id="currentAddress.street"
+                                    name="currentAddress.street"
+                                    placeholder="Street Address"
+                                    value={formData.currentAddress.street}
+                                    required
+                                    onChange={(e) =>
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        currentAddress: {
+                                          ...prev.currentAddress,
+                                          street: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="currentAddress.city">
+                                    City <Req />
+                                  </Label>
+                                  <Input
+                                    id="currentAddress.city"
+                                    name="currentAddress.city"
+                                    placeholder="City"
+                                    value={formData.currentAddress.city}
+                                    required
+                                    onChange={(e) =>
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        currentAddress: {
+                                          ...prev.currentAddress,
+                                          city: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="currentAddress.state">
+                                    State <Req />
+                                  </Label>
+                                  <Input
+                                    id="currentAddress.state"
+                                    name="currentAddress.state"
+                                    placeholder="State"
+                                    value={formData.currentAddress.state}
+                                    required
+                                    onChange={(e) =>
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        currentAddress: {
+                                          ...prev.currentAddress,
+                                          state: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="currentAddress.zip">
+                                    Zip Code <Req />
+                                  </Label>
+                                  <Input
+                                    id="currentAddress.zip"
+                                    name="currentAddress.zip"
+                                    placeholder="Zip Code"
+                                    value={formData.currentAddress.zip}
+                                    required
+                                    onChange={(e) =>
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        currentAddress: {
+                                          ...prev.currentAddress,
+                                          zip: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <Separator />
+
+                            {/* Permanent Address */}
+                            <div className="space-y-4">
+                              <div className="flex items-center space-x-2 mb-4">
+                                <Checkbox
+                                  id="isCurrentAddressSameAsPermanent"
+                                  checked={
+                                    formData.isCurrentAddressSameAsPermanent
+                                  }
+                                  onCheckedChange={(checked) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      isCurrentAddressSameAsPermanent:
+                                        checked as boolean,
+                                    }))
+                                  }
+                                />
+                                <Label
+                                  htmlFor="isCurrentAddressSameAsPermanent"
+                                  className="font-normal"
+                                >
+                                  Permanent Address is same as Current Address
+                                </Label>
+                              </div>
+
+                              {!formData.isCurrentAddressSameAsPermanent && (
+                                <>
+                                  <h4 className="text-md font-medium">
+                                    Permanent Address
+                                  </h4>
+                                  <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="permanentAddress.street">
+                                        Street <Req />
+                                      </Label>
+                                      <Input
+                                        id="permanentAddress.street"
+                                        name="permanentAddress.street"
+                                        placeholder="Street Address"
+                                        value={formData.permanentAddress.street}
+                                        required={
+                                          formData.isCurrentAddressSameAsPermanent ==
+                                          false
+                                        }
+                                        onChange={(e) =>
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            permanentAddress: {
+                                              ...prev.permanentAddress,
+                                              street: e.target.value,
+                                            },
+                                          }))
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="permanentAddress.city">
+                                        City <Req />
+                                      </Label>
+                                      <Input
+                                        id="permanentAddress.city"
+                                        name="permanentAddress.city"
+                                        placeholder="City"
+                                        value={formData.permanentAddress.city}
+                                        required={
+                                          formData.isCurrentAddressSameAsPermanent ==
+                                          false
+                                        }
+                                        onChange={(e) =>
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            permanentAddress: {
+                                              ...prev.permanentAddress,
+                                              city: e.target.value,
+                                            },
+                                          }))
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="permanentAddress.state">
+                                        State <Req />
+                                      </Label>
+                                      <Input
+                                        id="permanentAddress.state"
+                                        name="permanentAddress.state"
+                                        placeholder="State"
+                                        value={formData.permanentAddress.state}
+                                        required={
+                                          formData.isCurrentAddressSameAsPermanent ==
+                                          false
+                                        }
+                                        onChange={(e) =>
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            permanentAddress: {
+                                              ...prev.permanentAddress,
+                                              state: e.target.value,
+                                            },
+                                          }))
+                                        }
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="permanentAddress.zip">
+                                        Zip Code <Req />
+                                      </Label>
+                                      <Input
+                                        id="permanentAddress.zip"
+                                        name="permanentAddress.zip"
+                                        placeholder="Zip Code"
+                                        value={formData.permanentAddress.zip}
+                                        required={
+                                          formData.isCurrentAddressSameAsPermanent ==
+                                          false
+                                        }
+                                        onChange={(e) =>
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            permanentAddress: {
+                                              ...prev.permanentAddress,
+                                              zip: e.target.value,
+                                            },
+                                          }))
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+
+                            <Separator />
+
+                            {/* Verification Status */}
+                            <div className="space-y-4">
+                              <h4 className="text-md font-medium">
+                                Verification Status
+                              </h4>
+                              <div className="grid gap-4 md:grid-cols-3">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="isActive"
+                                    checked={formData.isActive}
+                                    onCheckedChange={(checked) =>
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        isActive: checked as boolean,
+                                      }))
+                                    }
+                                  />
+                                  <Label
+                                    htmlFor="isActive"
+                                    className="font-normal"
+                                  >
+                                    Is Active
+                                  </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="aadharVerified"
+                                    checked={formData.aadharVerified}
+                                    onCheckedChange={(checked) =>
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        aadharVerified: checked as boolean,
+                                      }))
+                                    }
+                                  />
+                                  <Label
+                                    htmlFor="aadharVerified"
+                                    className="font-normal"
+                                  >
+                                    Aadhar Verified
+                                  </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="policeVerified"
+                                    checked={formData.policeVerified}
+                                    onCheckedChange={(checked) =>
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        policeVerified: checked as boolean,
+                                      }))
+                                    }
+                                  />
+                                  <Label
+                                    htmlFor="policeVerified"
+                                    className="font-normal"
+                                  >
+                                    Police Verified
+                                  </Label>
+                                </div>
+                              </div>
+                            </div>
+
+                            <Separator />
+
+                            {/* Availability */}
+                            {/* <div className="space-y-2">
                             <Label htmlFor="availability">
                               Availability (Format: [[start,end],[start,end]])
                             </Label>
@@ -1270,807 +1345,602 @@ const AddStaffPage = () => {
                               `[["12/05/2025","17/05/2024"],["24/05/2025","29/05/2024"]]`
                             </p>
                           </div> */}
-                        </div>
-                      </TabsContent>
+                          </div>
+                        </TabsContent>
 
-                      <TabsContent value="professional" className="space-y-6">
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">
-                            Education & Experience
-                          </h3>
+                        <TabsContent value="professional" className="space-y-6">
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-medium">
+                              Education & Experience
+                            </h3>
 
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label htmlFor="qualification">
-                                Qualification
-                              </Label>
-                              <Select
-                                value={formData.qualification}
-                                onValueChange={(value) =>
-                                  handleSelectChange("qualification", value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select qualification" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="below-10th">
-                                    Below 10th
-                                  </SelectItem>
-                                  <SelectItem value="10th">
-                                    10th Pass
-                                  </SelectItem>
-                                  <SelectItem value="12th">
-                                    12th Pass
-                                  </SelectItem>
-                                  <SelectItem value="diploma">
-                                    Diploma
-                                  </SelectItem>
-                                  <SelectItem value="graduate">
-                                    Graduate
-                                  </SelectItem>
-                                  <SelectItem value="anm">ANM</SelectItem>
-                                  <SelectItem value="gnm">GNM</SelectItem>
-                                  <SelectItem value="bsc">BSC</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="experience">Experience</Label>
-                              <Select
-                                value={formData.experience}
-                                onValueChange={(value) =>
-                                  handleSelectChange("experience", value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select experience" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="less-than-1">
-                                    Less than 1 Year
-                                  </SelectItem>
-                                  <SelectItem value="1-2">1-2 Years</SelectItem>
-                                  <SelectItem value="2-5">2-5 Years</SelectItem>
-                                  <SelectItem value="5-10">
-                                    5-10 Years
-                                  </SelectItem>
-                                  <SelectItem value="10+">10+ Years</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="certificate">
-                                Education Certificate
-                              </Label>
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  id="certificate"
-                                  type="file"
-                                  accept=".pdf,.jpg,.jpeg,.png"
-                                  onChange={(e) =>
-                                    handleFileChange(e, "certificate")
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="qualification">
+                                  Qualification <Req />
+                                </Label>
+                                <Select
+                                  value={formData.qualification}
+                                  onValueChange={(value) =>
+                                    handleSelectChange("qualification", value)
                                   }
-                                  className="flex-1"
-                                />
-                                {formData.certificate && (
-                                  <div className="text-sm text-green-600 flex items-center gap-1">
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    <span>Uploaded</span>
-                                  </div>
-                                )}
+                                  required
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select qualification" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="below-10th">
+                                      Below 10th
+                                    </SelectItem>
+                                    <SelectItem value="10th">
+                                      10th Pass
+                                    </SelectItem>
+                                    <SelectItem value="12th">
+                                      12th Pass
+                                    </SelectItem>
+                                    <SelectItem value="diploma">
+                                      Diploma
+                                    </SelectItem>
+                                    <SelectItem value="graduate">
+                                      Graduate
+                                    </SelectItem>
+                                    <SelectItem value="anm">ANM</SelectItem>
+                                    <SelectItem value="gnm">GNM</SelectItem>
+                                    <SelectItem value="bsc">BSC</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="experience">
+                                  Experience <Req />
+                                </Label>
+                                <Select
+                                  value={formData.experience}
+                                  onValueChange={(value) =>
+                                    handleSelectChange("experience", value)
+                                  }
+                                  required
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select experience" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="less-than-1">
+                                      Less than 1 Year
+                                    </SelectItem>
+                                    <SelectItem value="1-2">
+                                      1-2 Years
+                                    </SelectItem>
+                                    <SelectItem value="2-5">
+                                      2-5 Years
+                                    </SelectItem>
+                                    <SelectItem value="5-10">
+                                      5-10 Years
+                                    </SelectItem>
+                                    <SelectItem value="10+">
+                                      10+ Years
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="certificate">
+                                  Education Certificate <Req />
+                                </Label>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    id="certificate"
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) =>
+                                      handleFileChange(e, "certificate")
+                                    }
+                                    required
+                                    className="flex-1"
+                                  />
+                                  {formData.certificate && (
+                                    <div className="text-sm text-green-600 flex items-center gap-1">
+                                      <CheckCircle2 className="h-4 w-4" />
+                                      <span>Uploaded</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        <Separator />
-
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">
-                            Shift Preferences
-                          </h3>
-
-                          <div className="space-y-3">
-                            <Label>Preferred Shifts</Label>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                              {[
-                                "Morning (6AM-2PM)",
-                                "Afternoon (2PM-10PM)",
-                                "Night (10PM-6AM)",
-                                "Full Day (9AM-6PM)",
-                                "24 Hours",
-                                "Part Time",
-                                "Flexible Hours",
-                              ].map((shift) => (
-                                <div
-                                  key={shift}
-                                  className="flex items-center space-x-2"
-                                >
-                                  <Checkbox
-                                    id={`shift-${shift}`}
-                                    checked={formData.preferredShifts.includes(
-                                      shift.toLowerCase()
-                                    )}
-                                    onCheckedChange={(checked) =>
-                                      handleCheckboxChange(
-                                        "preferredShifts",
-                                        shift.toLowerCase(),
-                                        checked as boolean
-                                      )
-                                    }
-                                  />
-                                  <Label
-                                    htmlFor={`shift-${shift}`}
-                                    className="font-normal"
-                                  >
-                                    {shift}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">
-                            Skills & Languages
-                          </h3>
-
-                          <div className="space-y-3">
-                            <Label>Languages Known</Label>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                              {[
-                                "Hindi",
-                                "English",
-                                "Bengali",
-                                "Tamil",
-                                "Telugu",
-                                "Kannada",
-                                "Malayalam",
-                                "Marathi",
-                                "Gujarati",
-                              ].map((language) => (
-                                <div
-                                  key={language}
-                                  className="flex items-center space-x-2"
-                                >
-                                  <Checkbox
-                                    id={`lang-${language}`}
-                                    checked={formData.languages.includes(
-                                      language.toLowerCase()
-                                    )}
-                                    onCheckedChange={(checked) =>
-                                      handleCheckboxChange(
-                                        "languages",
-                                        language.toLowerCase(),
-                                        checked as boolean
-                                      )
-                                    }
-                                  />
-                                  <Label
-                                    htmlFor={`lang-${language}`}
-                                    className="font-normal"
-                                  >
-                                    {language}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
                           <Separator />
 
-                          <div className="space-y-3 text-lg font-medium">
-                            <Label className="text-lg font-medium">
-                              Additional Services
-                            </Label>
-                            {Object.entries(SERVICES).map(
-                              ([category, services]) => (
-                                <div key={category} className="space-y-2">
-                                  <h4 className="text-sm font-medium">
-                                    {category}
-                                  </h4>
-                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                    {services.map((service) => (
-                                      <div
-                                        key={service}
-                                        className="flex items-center space-x-2"
-                                      >
-                                        <Checkbox
-                                          id={`service-${service}`}
-                                          checked={
-                                            formData.services[
-                                              category
-                                            ]?.includes(
-                                              service.toLowerCase()
-                                            ) || false
-                                          }
-                                          onCheckedChange={(checked) =>
-                                            handleCheckboxChange(
-                                              category,
-                                              service.toLowerCase(),
-                                              checked as boolean
-                                            )
-                                          }
-                                        />
-                                        <Label
-                                          htmlFor={`service-${service}`}
-                                          className="font-normal"
-                                        >
-                                          {service}
-                                        </Label>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      </TabsContent>
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-medium">
+                              Skills & Languages
+                            </h3>
 
-                      <TabsContent
-                        value="agency-location"
-                        className="space-y-6"
-                      >
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">
-                            Provider Agency & Location
-                          </h3>
-
-                          <div className="grid gap-4 md:grid-cols-2">
-                            {/* Provider Agency */}
-                            <div className="space-y-2">
-                              <Label htmlFor="providerAgency">
-                                Provider Agency
-                              </Label>
-                              <Select
-                                value={formData.providerId}
-                                onValueChange={(value) =>
-                                  handleSelectChange("providerId", value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select agency" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="zense">Zense</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* Districts */}
                             <div className="space-y-3">
-                              <Label>Districts to Serve</Label>
+                              <Label>Languages Known</Label>
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {DISTRICTS.map((district) => (
+                                {[
+                                  "Hindi",
+                                  "English",
+                                  "Bengali",
+                                  "Tamil",
+                                  "Telugu",
+                                  "Kannada",
+                                  "Malayalam",
+                                  "Marathi",
+                                  "Gujarati",
+                                ].map((language) => (
                                   <div
-                                    key={district}
+                                    key={language}
                                     className="flex items-center space-x-2"
                                   >
                                     <Checkbox
-                                      id={`district-${district}`}
-                                      checked={formData.district.includes(
-                                        district.toLowerCase()
+                                      id={`lang-${language}`}
+                                      checked={formData.languages.includes(
+                                        language.toLowerCase()
                                       )}
                                       onCheckedChange={(checked) =>
                                         handleCheckboxChange(
-                                          "district",
-                                          district.toLowerCase(),
+                                          "languages",
+                                          language.toLowerCase(),
                                           checked as boolean
                                         )
                                       }
                                     />
                                     <Label
-                                      htmlFor={`district-${district}`}
+                                      htmlFor={`lang-${language}`}
                                       className="font-normal"
                                     >
-                                      {district}
+                                      {language}
                                     </Label>
                                   </div>
                                 ))}
                               </div>
                             </div>
 
-                            {/* Subdistricts */}
-                            {/* Sub-districts based on selected districts */}
-                            {formData.district.length > 0 && (
-                              <div className="space-y-3 md:col-span-2">
-                                <Label>Subdistricts to Serve</Label>
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <Checkbox
-                                    id="all-subdistricts"
-                                    checked={
-                                      formData.district.length > 0 &&
-                                      formData.subDistricts.length ===
-                                        formData.district.reduce(
-                                          (acc, district) => {
-                                            const normalizedDistrict =
-                                              district.toLowerCase() as District;
-                                            return (
-                                              acc +
-                                              (SUB_DISTRICTS[normalizedDistrict]
-                                                ?.length || 0)
-                                            );
-                                          },
-                                          0
-                                        )
-                                    }
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        // Select all subdistricts from selected districts
-                                        const allSubdistricts: string[] = [];
-                                        formData.district.forEach(
-                                          (district) => {
-                                            const normalizedDistrict =
-                                              district.toLowerCase() as District;
-                                            if (
-                                              SUB_DISTRICTS[normalizedDistrict]
-                                            ) {
-                                              SUB_DISTRICTS[
-                                                normalizedDistrict
-                                              ].forEach((subdistrict) => {
-                                                allSubdistricts.push(
-                                                  subdistrict.toLowerCase()
-                                                );
-                                              });
-                                            }
-                                          }
-                                        );
+                            <Separator />
 
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          subDistricts: allSubdistricts,
-                                        }));
-                                      } else {
-                                        // Deselect all subdistricts
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          subDistricts: [],
-                                        }));
-                                      }
-                                    }}
-                                  />
-                                  <Label
-                                    htmlFor="all-subdistricts"
-                                    className="font-normal"
-                                  >
-                                    Select All Subdistricts
-                                  </Label>
-                                </div>
-
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                  {formData.district.map((district) => {
-                                    const normalizedDistrict =
-                                      district.toLowerCase() as District;
-                                    return SUB_DISTRICTS[
-                                      normalizedDistrict
-                                    ]?.map((subdistrict) => (
-                                      <div
-                                        key={subdistrict}
-                                        className="flex items-center space-x-2"
-                                      >
-                                        <Checkbox
-                                          id={`subdistrict-${subdistrict}`}
-                                          checked={formData.subDistricts.includes(
-                                            subdistrict.toLowerCase()
-                                          )}
-                                          onCheckedChange={(checked) => {
-                                            if (checked) {
-                                              setFormData((prev) => ({
-                                                ...prev,
-                                                subDistricts: [
-                                                  ...prev.subDistricts,
-                                                  subdistrict.toLowerCase(),
-                                                ],
-                                              }));
-                                            } else {
-                                              setFormData((prev) => ({
-                                                ...prev,
-                                                subDistricts:
-                                                  prev.subDistricts.filter(
-                                                    (item) =>
-                                                      item !==
-                                                      subdistrict.toLowerCase()
-                                                  ),
-                                              }));
-                                            }
-                                          }}
-                                        />
-                                        <Label
-                                          htmlFor={`subdistrict-${subdistrict}`}
-                                          className="font-normal"
+                            <div className="space-y-3 text-lg font-medium">
+                              <Label className="text-lg font-medium">
+                                Additional Services
+                              </Label>
+                              {Object.entries(SERVICES).map(
+                                ([category, services]) => (
+                                  <div key={category} className="space-y-2">
+                                    <h4 className="text-sm font-medium">
+                                      {category}
+                                    </h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                      {services.map((service) => (
+                                        <div
+                                          key={service}
+                                          className="flex items-center space-x-2"
                                         >
-                                          {subdistrict}
-                                        </Label>
-                                      </div>
-                                    ));
-                                  })}
+                                          <Checkbox
+                                            id={`service-${service}`}
+                                            checked={
+                                              formData.services[
+                                                category
+                                              ]?.includes(
+                                                service.toLowerCase()
+                                              ) || false
+                                            }
+                                            onCheckedChange={(checked) =>
+                                              handleCheckboxChange(
+                                                category,
+                                                service.toLowerCase(),
+                                                checked as boolean
+                                              )
+                                            }
+                                          />
+                                          <Label
+                                            htmlFor={`service-${service}`}
+                                            className="font-normal"
+                                          >
+                                            {service}
+                                          </Label>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent
+                          value="agency-location"
+                          className="space-y-6"
+                        >
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-medium">
+                              Provider Agency & Location
+                            </h3>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                              {/* Provider Agency */}
+                              <div className="space-y-2">
+                                <Label htmlFor="providerAgency">
+                                  Provider Agency <Req />
+                                </Label>
+                                <Select
+                                  value={formData.providerId}
+                                  onValueChange={(value) =>
+                                    handleSelectChange("providerId", value)
+                                  }
+                                  required
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select agency" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="zense">Zense</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Districts */}
+                              <div className="space-y-3">
+                                <Label>
+                                  Districts to Serve <Req />
+                                </Label>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                  {DISTRICTS.map((district) => (
+                                    <div
+                                      key={district}
+                                      className="flex items-center space-x-2"
+                                    >
+                                      <Checkbox
+                                        id={`district-${district}`}
+                                        checked={formData.district.includes(
+                                          district.toLowerCase()
+                                        )}
+                                        onCheckedChange={(checked) =>
+                                          handleCheckboxChange(
+                                            "district",
+                                            district.toLowerCase(),
+                                            checked as boolean
+                                          )
+                                        }
+                                        required
+                                      />
+                                      <Label
+                                        htmlFor={`district-${district}`}
+                                        className="font-normal"
+                                      >
+                                        {district}
+                                      </Label>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      </TabsContent>
 
-                      <TabsContent value="preferences" className="space-y-6">
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">
-                            Personal Preferences
-                          </h3>
+                              {/* Subdistricts */}
+                              {/* Sub-districts based on selected districts */}
+                              {formData.district.length > 0 && (
+                                <div className="space-y-3 md:col-span-2">
+                                  <Label>Subdistricts to Serve</Label>
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    <Checkbox
+                                      required
+                                      id="all-subdistricts"
+                                      checked={
+                                        formData.district.length > 0 &&
+                                        formData.subDistricts.length ===
+                                          formData.district.reduce(
+                                            (acc, district) => {
+                                              const normalizedDistrict =
+                                                district.toLowerCase() as District;
+                                              return (
+                                                acc +
+                                                (SUB_DISTRICTS[
+                                                  normalizedDistrict
+                                                ]?.length || 0)
+                                              );
+                                            },
+                                            0
+                                          )
+                                      }
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          // Select all subdistricts from selected districts
+                                          const allSubdistricts: string[] = [];
+                                          formData.district.forEach(
+                                            (district) => {
+                                              const normalizedDistrict =
+                                                district.toLowerCase() as District;
+                                              if (
+                                                SUB_DISTRICTS[
+                                                  normalizedDistrict
+                                                ]
+                                              ) {
+                                                SUB_DISTRICTS[
+                                                  normalizedDistrict
+                                                ].forEach((subdistrict) => {
+                                                  allSubdistricts.push(
+                                                    subdistrict.toLowerCase()
+                                                  );
+                                                });
+                                              }
+                                            }
+                                          );
 
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label htmlFor="foodPreference">
-                                Food Preference
-                              </Label>
-                              <Select
-                                value={formData.foodPreference}
-                                onValueChange={(value) =>
-                                  handleSelectChange("foodPreference", value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select food preference" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="veg">Veg</SelectItem>
-                                  <SelectItem value="non-veg">
-                                    Non-Veg
-                                  </SelectItem>
-                                  <SelectItem value="both">Both</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            subDistricts: allSubdistricts,
+                                          }));
+                                        } else {
+                                          // Deselect all subdistricts
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            subDistricts: [],
+                                          }));
+                                        }
+                                      }}
+                                    />
+                                    <Label
+                                      htmlFor="all-subdistricts"
+                                      className="font-normal"
+                                    >
+                                      Select All Subdistricts
+                                    </Label>
+                                  </div>
 
-                            <div className="space-y-2">
-                              <Label htmlFor="smoking">Smoking Habit</Label>
-                              <RadioGroup
-                                value={formData.smoking}
-                                onValueChange={(value) =>
-                                  handleSelectChange("smoking", value)
-                                }
-                              >
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem value="no" id="smoking-no" />
-                                  <Label
-                                    htmlFor="smoking-no"
-                                    className="font-normal"
-                                  >
-                                    No
-                                  </Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem
-                                    value="yes"
-                                    id="smoking-yes"
-                                  />
-                                  <Label
-                                    htmlFor="smoking-yes"
-                                    className="font-normal"
-                                  >
-                                    Yes
-                                  </Label>
-                                </div>
-                              </RadioGroup>
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="carryFood">
-                                Can carry own food for 12hr shift?
-                              </Label>
-                              <RadioGroup
-                                value={formData.carryFood}
-                                onValueChange={(value) =>
-                                  handleSelectChange("carryFood", value)
-                                }
-                              >
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem
-                                    value="yes"
-                                    id="carryFood-yes"
-                                  />
-                                  <Label
-                                    htmlFor="carryFood-yes"
-                                    className="font-normal"
-                                  >
-                                    Yes
-                                  </Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <RadioGroupItem
-                                    value="no"
-                                    id="carryFood-no"
-                                  />
-                                  <Label
-                                    htmlFor="carryFood-no"
-                                    className="font-normal"
-                                  >
-                                    No
-                                  </Label>
-                                </div>
-                              </RadioGroup>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="additionalInfo">
-                              Additional Information
-                            </Label>
-                            <Textarea
-                              id="additionalInfo"
-                              name="additionalInfo"
-                              placeholder="Any additional information about the staff member"
-                              value={formData.additionalInfo}
-                              onChange={handleInputChange}
-                              rows={4}
-                            />
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">Testimonial</h3>
-
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label htmlFor="customerName">
-                                Customer Name
-                              </Label>
-                              <Input
-                                id="customerName"
-                                name="customerName"
-                                placeholder="Enter customer name"
-                                value={formData.customerName}
-                                onChange={handleInputChange}
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="customerPhone">
-                                Customer Phone
-                              </Label>
-                              <Input
-                                id="customerPhone"
-                                name="customerPhone"
-                                placeholder="Enter customer phone"
-                                value={formData.customerPhone}
-                                onChange={handleInputChange}
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="video">Video Testimonial</Label>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                id="video"
-                                type="file"
-                                accept="video/*"
-                                onChange={(e) => handleFileChange(e, "video")}
-                                className="flex-1"
-                              />
-                              {formData.video && (
-                                <div className="text-sm text-green-600 flex items-center gap-1">
-                                  <CheckCircle2 className="h-4 w-4" />
-                                  <span>Uploaded</span>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    {formData.district.map((district) => {
+                                      const normalizedDistrict =
+                                        district.toLowerCase() as District;
+                                      return SUB_DISTRICTS[
+                                        normalizedDistrict
+                                      ]?.map((subdistrict) => (
+                                        <div
+                                          key={subdistrict}
+                                          className="flex items-center space-x-2"
+                                        >
+                                          <Checkbox
+                                            id={`subdistrict-${subdistrict}`}
+                                            checked={formData.subDistricts.includes(
+                                              subdistrict.toLowerCase()
+                                            )}
+                                            onCheckedChange={(checked) => {
+                                              if (checked) {
+                                                setFormData((prev) => ({
+                                                  ...prev,
+                                                  subDistricts: [
+                                                    ...prev.subDistricts,
+                                                    subdistrict.toLowerCase(),
+                                                  ],
+                                                }));
+                                              } else {
+                                                setFormData((prev) => ({
+                                                  ...prev,
+                                                  subDistricts:
+                                                    prev.subDistricts.filter(
+                                                      (item) =>
+                                                        item !==
+                                                        subdistrict.toLowerCase()
+                                                    ),
+                                                }));
+                                              }
+                                            }}
+                                          />
+                                          <Label
+                                            htmlFor={`subdistrict-${subdistrict}`}
+                                            className="font-normal"
+                                          >
+                                            {subdistrict}
+                                          </Label>
+                                        </div>
+                                      ));
+                                    })}
+                                  </div>
                                 </div>
                               )}
                             </div>
                           </div>
-                        </div>
-                      </TabsContent>
+                        </TabsContent>
 
-                      {/* Bank Details Tab */}
-                      <TabsContent value="bank-details" className="space-y-6">
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">Bank Details</h3>
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label htmlFor="bankDetails.accountName">
-                                Account Name
-                              </Label>
-                              <Input
-                                id="bankDetails.accountName"
-                                name="bankDetails.accountName"
-                                placeholder="Name on Account"
-                                value={formData.bankDetails.accountName}
-                                onChange={(e) =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    bankDetails: {
-                                      ...prev.bankDetails,
-                                      accountName: e.target.value,
-                                    },
-                                  }))
-                                }
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="bankDetails.accountNumber">
-                                Account Number
-                              </Label>
-                              <Input
-                                id="bankDetails.accountNumber"
-                                name="bankDetails.accountNumber"
-                                placeholder="Account Number"
-                                value={formData.bankDetails.accountNumber}
-                                onChange={(e) =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    bankDetails: {
-                                      ...prev.bankDetails,
-                                      accountNumber: e.target.value,
-                                    },
-                                  }))
-                                }
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="bankDetails.ifscCode">
-                                IFSC Code
-                              </Label>
-                              <Input
-                                id="bankDetails.ifscCode"
-                                name="bankDetails.ifscCode"
-                                placeholder="IFSC Code"
-                                value={formData.bankDetails.ifscCode}
-                                onChange={(e) =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    bankDetails: {
-                                      ...prev.bankDetails,
-                                      ifscCode: e.target.value,
-                                    },
-                                  }))
-                                }
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="bankDetails.bankName">
-                                Bank Name
-                              </Label>
-                              <Input
-                                id="bankDetails.bankName"
-                                name="bankDetails.bankName"
-                                placeholder="Bank Name"
-                                value={formData.bankDetails.bankName}
-                                onChange={(e) =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    bankDetails: {
-                                      ...prev.bankDetails,
-                                      bankName: e.target.value,
-                                    },
-                                  }))
-                                }
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="bankDetails.bankBranch">
-                                Bank Branch
-                              </Label>
-                              <Input
-                                id="bankDetails.bankBranch"
-                                name="bankDetails.bankBranch"
-                                placeholder="Bank Branch"
-                                value={formData.bankDetails.bankBranch}
-                                onChange={(e) =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    bankDetails: {
-                                      ...prev.bankDetails,
-                                      bankBranch: e.target.value,
-                                    },
-                                  }))
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="documents" className="space-y-6">
-                        <div className="space-y-4">
-                          <h3 className="text-lg font-medium">
-                            ID Proof Documents
-                          </h3>
-
+                        <TabsContent value="preferences" className="space-y-6">
                           <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="aadharNumber">
-                                Aadhar Number
-                              </Label>
-                              <Input
-                                id="aadharNumber"
-                                name="aadharNumber"
-                                placeholder="Enter 12-digit Aadhar number"
-                                value={formData.aadharNumber}
-                                onChange={handleInputChange}
-                                maxLength={12}
-                              />
+                            <h3 className="text-lg font-medium">
+                              Personal Preferences
+                            </h3>
+
+                            <div className=" grid gap-4 md:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="foodPreference">
+                                  Food Preference <Req />
+                                </Label>
+                                <Select
+                                  value={formData.foodPreference}
+                                  onValueChange={(value) =>
+                                    handleSelectChange("foodPreference", value)
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select food preference" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="veg">Veg</SelectItem>
+                                    <SelectItem value="non-veg">
+                                      Non-Veg
+                                    </SelectItem>
+                                    <SelectItem value="both">Both</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="smoking">
+                                  Smoking Habit <Req />
+                                </Label>
+                                <RadioGroup
+                                  value={formData.smoking}
+                                  onValueChange={(value) =>
+                                    handleSelectChange("smoking", value)
+                                  }
+                                >
+                                  <div className="flex items-center space-x-2">
+                                    <RadioGroupItem
+                                      value="no"
+                                      id="smoking-no"
+                                    />
+                                    <Label
+                                      htmlFor="smoking-no"
+                                      className="font-normal"
+                                    >
+                                      No
+                                    </Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <RadioGroupItem
+                                      value="yes"
+                                      id="smoking-yes"
+                                    />
+                                    <Label
+                                      htmlFor="smoking-yes"
+                                      className="font-normal"
+                                    >
+                                      Yes
+                                    </Label>
+                                  </div>
+                                </RadioGroup>
+                              </div>
                             </div>
 
-                            <div className="grid gap-4 md:grid-cols-2">
-                              <div className="space-y-2">
-                                <Label htmlFor="aadharFront">
-                                  Aadhar Front
-                                </Label>
-                                <div className="flex items-center gap-2">
-                                  <Input
-                                    id="aadharFront"
-                                    type="file"
-                                    accept=".jpg,.jpeg,.png,.pdf"
-                                    onChange={(e) =>
-                                      handleFileChange(e, "aadharFront")
-                                    }
-                                    className="flex-1"
-                                  />
-                                  {formData.aadharFront && (
-                                    <div className="text-sm text-green-600 flex items-center gap-1">
-                                      <CheckCircle2 className="h-4 w-4" />
-                                      <span>Uploaded</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
+                            <div className="space-y-4">
+                              <h3 className="text-lg font-medium">
+                                Shift Preferences
+                              </h3>
 
-                              <div className="space-y-2">
-                                <Label htmlFor="aadharBack">Aadhar Back</Label>
-                                <div className="flex items-center gap-2">
-                                  <Input
-                                    id="aadharBack"
-                                    type="file"
-                                    accept=".jpg,.jpeg,.png,.pdf"
-                                    onChange={(e) =>
-                                      handleFileChange(e, "aadharBack")
-                                    }
-                                    className="flex-1"
-                                  />
-                                  {formData.aadharBack && (
-                                    <div className="text-sm text-green-600 flex items-center gap-1">
-                                      <CheckCircle2 className="h-4 w-4" />
-                                      <span>Uploaded</span>
+                              <div className="space-y-3">
+                                <Label>Preferred Shifts</Label>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                  {[
+                                    "Morning (6AM-2PM)",
+                                    "Afternoon (2PM-10PM)",
+                                    "Night (10PM-6AM)",
+                                    "Full Day (9AM-6PM)",
+                                    "24 Hours",
+                                    "Part Time",
+                                    "Flexible Hours",
+                                  ].map((shift) => (
+                                    <div
+                                      key={shift}
+                                      className="flex items-center space-x-2"
+                                    >
+                                      <Checkbox
+                                        id={`shift-${shift}`}
+                                        checked={
+                                          Array.isArray(
+                                            formData.preferredShifts
+                                          ) &&
+                                          formData.preferredShifts.some(
+                                            (s) =>
+                                              s.toLowerCase() ===
+                                              shift.toLowerCase()
+                                          )
+                                        }
+                                        onCheckedChange={(checked) => {
+                                          setFormData((prev) => {
+                                            if (checked) {
+                                              return {
+                                                ...prev,
+                                                preferredShifts: [
+                                                  ...(prev.preferredShifts ||
+                                                    []),
+                                                  shift,
+                                                ],
+                                              };
+                                            } else {
+                                              return {
+                                                ...prev,
+                                                preferredShifts:
+                                                  prev.preferredShifts.filter(
+                                                    (s) =>
+                                                      s.toLowerCase() !==
+                                                      shift.toLowerCase()
+                                                  ),
+                                              };
+                                            }
+                                          });
+                                        }}
+                                      />
+                                      <Label
+                                        htmlFor={`shift-${shift}`}
+                                        className="font-normal"
+                                      >
+                                        {shift}
+                                      </Label>
                                     </div>
-                                  )}
+                                  ))}
                                 </div>
                               </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="additionalInfo">
+                                Additional Information
+                              </Label>
+                              <Textarea
+                                id="additionalInfo"
+                                name="additionalInfo"
+                                placeholder="Any additional information about the staff member"
+                                value={formData.additionalInfo}
+                                onChange={handleInputChange}
+                                rows={4}
+                              />
                             </div>
                           </div>
 
                           <Separator />
 
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="panNumber">PAN Number</Label>
-                              <Input
-                                id="panNumber"
-                                name="panNumber"
-                                placeholder="Enter 10-character PAN number"
-                                value={formData.panNumber}
-                                onChange={handleInputChange}
-                                maxLength={10}
-                              />
+                          {/* <div className="space-y-4">
+                            <h3 className="text-lg font-medium">Testimonial</h3>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="customerName">
+                                  Customer Name
+                                </Label>
+                                <Input
+                                  id="customerName"
+                                  name="customerName"
+                                  placeholder="Enter customer name"
+                                  value={formData.customerName}
+                                  onChange={handleInputChange}
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="customerPhone">
+                                  Customer Phone
+                                </Label>
+                                <Input
+                                  id="customerPhone"
+                                  name="customerPhone"
+                                  placeholder="Enter customer phone"
+                                  value={formData.customerPhone}
+                                  onChange={handleInputChange}
+                                />
+                              </div>
                             </div>
 
                             <div className="space-y-2">
-                              <Label htmlFor="panCard">PAN Card</Label>
+                              <Label htmlFor="video">Video Testimonial</Label>
                               <div className="flex items-center gap-2">
                                 <Input
-                                  id="panCard"
+                                  id="video"
                                   type="file"
-                                  accept=".jpg,.jpeg,.png,.pdf"
-                                  onChange={(e) =>
-                                    handleFileChange(e, "panCard")
-                                  }
+                                  accept="video/*"
+                                  onChange={(e) => handleFileChange(e, "video")}
                                   className="flex-1"
                                 />
-                                {formData.panCard && (
+                                {formData.video && (
                                   <div className="text-sm text-green-600 flex items-center gap-1">
                                     <CheckCircle2 className="h-4 w-4" />
                                     <span>Uploaded</span>
@@ -2078,38 +1948,243 @@ const AddStaffPage = () => {
                                 )}
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
-                  </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const tabs = [
-                          "personal-info",
-                          "other-details",
-                          "professional",
-                          "agency-location",
-                          "preferences",
-                          "bank-details",
-                          "documents",
-                        ];
-                        const currentIndex = tabs.indexOf(activeTab);
-                        if (currentIndex > 0) {
-                          setActiveTab(tabs[currentIndex - 1]);
-                        }
-                      }}
-                      disabled={activeTab === "personal-info"}
-                    >
-                      Previous
-                    </Button>
+                          </div> */}
+                        </TabsContent>
 
-                    {activeTab !== "documents" && (
+                        {/* Bank Details Tab */}
+                        <TabsContent value="bank-details" className="space-y-6">
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-medium">
+                              Bank Details
+                            </h3>
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="bankDetails.accountName">
+                                  Account Name
+                                </Label>
+                                <Input
+                                  id="bankDetails.accountName"
+                                  name="bankDetails.accountName"
+                                  placeholder="Name on Account"
+                                  value={formData.bankDetails.accountName}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      bankDetails: {
+                                        ...prev.bankDetails,
+                                        accountName: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="bankDetails.accountNumber">
+                                  Account Number
+                                </Label>
+                                <Input
+                                  id="bankDetails.accountNumber"
+                                  name="bankDetails.accountNumber"
+                                  placeholder="Account Number"
+                                  value={formData.bankDetails.accountNumber}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      bankDetails: {
+                                        ...prev.bankDetails,
+                                        accountNumber: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="bankDetails.ifscCode">
+                                  IFSC Code
+                                </Label>
+                                <Input
+                                  id="bankDetails.ifscCode"
+                                  name="bankDetails.ifscCode"
+                                  placeholder="IFSC Code"
+                                  value={formData.bankDetails.ifscCode}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      bankDetails: {
+                                        ...prev.bankDetails,
+                                        ifscCode: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="bankDetails.bankName">
+                                  Bank Name
+                                </Label>
+                                <Input
+                                  id="bankDetails.bankName"
+                                  name="bankDetails.bankName"
+                                  placeholder="Bank Name"
+                                  value={formData.bankDetails.bankName}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      bankDetails: {
+                                        ...prev.bankDetails,
+                                        bankName: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="bankDetails.bankBranch">
+                                  Bank Branch
+                                </Label>
+                                <Input
+                                  id="bankDetails.bankBranch"
+                                  name="bankDetails.bankBranch"
+                                  placeholder="Bank Branch"
+                                  value={formData.bankDetails.bankBranch}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      bankDetails: {
+                                        ...prev.bankDetails,
+                                        bankBranch: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="documents" className="space-y-6">
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-medium">
+                              ID Proof Documents
+                            </h3>
+
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="aadharNumber">
+                                  Aadhar Number <Req />
+                                </Label>
+                                <Input
+                                  id="aadharNumber"
+                                  name="aadharNumber"
+                                  placeholder="Enter 12-digit Aadhar number"
+                                  value={formData.aadharNumber}
+                                  onChange={handleInputChange}
+                                  type="number"
+                                  pattern="[0-9]*"
+                                  inputMode="numeric"
+                                  minLength={12}
+                                  maxLength={12}
+                                />
+                              </div>
+
+                              <div className="grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                  <Label htmlFor="aadharFront">
+                                    Aadhar Front <Req />
+                                  </Label>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      id="aadharFront"
+                                      type="file"
+                                      accept=".jpg,.jpeg,.png,.pdf"
+                                      onChange={(e) =>
+                                        handleFileChange(e, "aadharFront")
+                                      }
+                                      className="flex-1"
+                                      required
+                                    />
+                                    {formData.aadharFront && (
+                                      <div className="text-sm text-green-600 flex items-center gap-1">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        <span>Uploaded</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="aadharBack">
+                                    Aadhar Back <Req />
+                                  </Label>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      id="aadharBack"
+                                      type="file"
+                                      accept=".jpg,.jpeg,.png,.pdf"
+                                      onChange={(e) =>
+                                        handleFileChange(e, "aadharBack")
+                                      }
+                                      className="flex-1"
+                                      required
+                                    />
+                                    {formData.aadharBack && (
+                                      <div className="text-sm text-green-600 flex items-center gap-1">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        <span>Uploaded</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="panNumber">PAN Number</Label>
+                                <Input
+                                  id="panNumber"
+                                  name="panNumber"
+                                  placeholder="Enter 10-character PAN number"
+                                  value={formData.panNumber}
+                                  onChange={handleInputChange}
+                                  type="text"
+                                  inputMode="text"
+                                  minLength={10}
+                                  maxLength={10}
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor="panCard">PAN Card</Label>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    id="panCard"
+                                    type="file"
+                                    accept=".jpg,.jpeg,.png,.pdf"
+                                    onChange={(e) =>
+                                      handleFileChange(e, "panCard")
+                                    }
+                                    className="flex-1"
+                                  />
+                                  {formData.panCard && (
+                                    <div className="text-sm text-green-600 flex items-center gap-1">
+                                      <CheckCircle2 className="h-4 w-4" />
+                                      <span>Uploaded</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </CardContent>
+                    <CardFooter className="flex justify-between">
                       <Button
                         type="button"
+                        variant="outline"
                         onClick={() => {
                           const tabs = [
                             "personal-info",
@@ -2121,32 +2196,56 @@ const AddStaffPage = () => {
                             "documents",
                           ];
                           const currentIndex = tabs.indexOf(activeTab);
-                          if (currentIndex < tabs.length - 1) {
-                            setActiveTab(tabs[currentIndex + 1]);
+                          if (currentIndex > 0) {
+                            setActiveTab(tabs[currentIndex - 1]);
                           }
                         }}
+                        disabled={activeTab === "personal-info"}
                       >
-                        Next
+                        Previous
                       </Button>
-                    )}
 
-                    <div className="fixed bottom-4 right-4 z-50">
-                      <Button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="shadow-lg"
-                      >
-                        {isSubmitting ? "Submitting..." : "Register Staff"}
-                      </Button>
-                    </div>
-                  </CardFooter>
-                </Card>
-              </form>
-            )}
-          </>
-        )}
-      </div>
-    </Layout>
+                      {activeTab !== "documents" && (
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const tabs = [
+                              "personal-info",
+                              "other-details",
+                              "professional",
+                              "agency-location",
+                              "preferences",
+                              "bank-details",
+                              "documents",
+                            ];
+                            const currentIndex = tabs.indexOf(activeTab);
+                            if (currentIndex < tabs.length - 1) {
+                              setActiveTab(tabs[currentIndex + 1]);
+                            }
+                          }}
+                        >
+                          Next
+                        </Button>
+                      )}
+
+                      <div className="fixed bottom-4 right-4 z-50">
+                        <Button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="shadow-lg"
+                        >
+                          {isSubmitting ? "Submitting..." : "Register Staff"}
+                        </Button>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                </form>
+              )}
+            </>
+          )}
+        </div>
+      </Layout>
+    </ProtectedRoute>
   );
 };
 

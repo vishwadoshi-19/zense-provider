@@ -1,5 +1,8 @@
 // Removed unused import
 
+import { Scale } from "lucide-react";
+import { cloneElement } from "react";
+
 // lib/downloadPDF.ts
 export const downloadResumeAsPDF = async (
   elementId: string,
@@ -16,16 +19,16 @@ export const downloadResumeAsPDF = async (
     margin: 0,
     filename: `${fileName}_Resume.pdf`,
     pagebreak: { mode: ["avoid-all", "css"] },
-    image: { type: "jpeg", quality: 0.98 },
+    image: { type: "jpeg", quality: 1 },
     enableLinks: true,
-    html2canvas: { useCORS: true }, // Added scale for better rendering
+    html2canvas: { useCORS: true, Scale: 2 }, // Added scale for better rendering
     jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
   };
 
   // Ensure proper scaling for images
-  const clonedElement = element.cloneNode(true) as HTMLElement;
-  clonedElement.style.width = "8.27in"; // A4 width in inches
-  clonedElement.style.height = "11.69in"; // A4 height in inches
+  // const clonedElement = element.cloneNode(true) as HTMLElement;
+  // clonedElement.style.width = "8.27in"; // A4 width in inches
+  // clonedElement.style.height = "11.69in"; // A4 height in inches
   // clonedElement.style.overflow = "hidden"; // Hide
   // clonedElement.style.position = "absolute"; // Position it absolutely
   // clonedElement.style.top = "0"; // Align to top
@@ -37,7 +40,7 @@ export const downloadResumeAsPDF = async (
   // clonedElement.style.height = "100%"; // Set height to 100%
   // clonedElement.style.position = "fixed"; // Fixed position
   // clonedElement.style.top = "0"; // Align to top
-  clonedElement.style.transform = "scale(1)";
-  clonedElement.style.transformOrigin = "top left";
-  html2pdf().set(opt).from(clonedElement).save();
+  // clonedElement.style.transform = "scale(1)";
+  // clonedElement.style.transformOrigin = "top left";
+  html2pdf().set(opt).from(element).save();
 };

@@ -35,6 +35,7 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 import AssignStaffDialog from "@/components/dashboard/AssignStaffDialog"; // Import AssignStaffDialog
 import { UserPlus } from "lucide-react"; // Import UserPlus icon
 import { format } from "date-fns"; // Import format for date handling
+import { Card } from "@/components/ui/card";
 
 interface FormData {
   jobType?: string;
@@ -1056,23 +1057,66 @@ const EditJobPage = () => {
               Assign Staff
             </Button> */}
             {formData.staffInfo && (
-              <div>
-                <p className="text-sm text-gray-700">
-                  Assigned Staff: {formData.staffInfo.staffId}
-                </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      staffInfo: undefined, // Clear the staffInfo object
-                    }));
-                  }}
-                >
-                  Remove
-                </Button>
-              </div>
+              <Card className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold">Assigned Staff</h3>
+                    <p className="text-sm text-gray-700">
+                      {formData.staffInfo.staffName ? (
+                        <>
+                          Name: {formData.staffInfo.staffName} <br />
+                          ID: {formData.staffInfo.staffId}
+                        </>
+                      ) : (
+                        `Staff ID: ${formData.staffInfo.staffId || "N/A"}`
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {/* <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (formData.staffInfo?.staffId) {
+                          router.push(`/staff/${formData?.staffInfo?.staffId}`);
+                        }
+                      }}
+                      disabled={!formData.staffInfo?.staffId}
+                    >
+                      View
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (formData.staffInfo?.staffId) {
+                          router.push(
+                            `/staff/edit/${formData.staffInfo.staffId}`
+                          );
+                        }
+                      }}
+                      disabled={!formData.staffInfo?.staffId}
+                    >
+                      Edit
+                    </Button> */}
+                    {formData.staffInfo?.staffId && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            staffInfo: undefined,
+                            status: "pending",
+                          }));
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Card>
             )}
           </div>
 

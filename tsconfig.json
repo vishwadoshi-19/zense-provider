@@ -28,7 +28,8 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/lib/firebase/phoneAuthWithoutOTP.js"
+    "src/lib/firebase/phoneAuthWithoutOTP.js",
+    "src/pages/api/__tests__/createStaffUser.test.js"
   ],
   "exclude": ["node_modules"]
 }

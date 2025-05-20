@@ -522,13 +522,18 @@ const AddJobPage = () => {
               />
             </div>
             <div>
-              <Label htmlFor="signUpDate">Sign Up Date</Label>
+              <Label htmlFor="signUpDate">
+                Sign Up Date<span className="text-red-500 ml-1">*</span>
+              </Label>
               <Input
                 id="signUpDate"
                 name="signUpDate"
                 type="date"
-                value={formData.signUpDate ?? ""}
+                value={
+                  formData.signUpDate ?? new Date().toISOString().split("T")[0]
+                }
                 onChange={handleChange}
+                required
               />
             </div>
             <div>
