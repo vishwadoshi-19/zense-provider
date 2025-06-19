@@ -77,4 +77,7 @@ export interface Job2 {
   medicineOrders: Array<Partial<OrderEntry>>;
   diagnosticOrders: Array<Partial<OrderEntry>>;
   otherOrders: Array<Partial<OrderEntry>>;
+
+  // Add pin property
+  pin?: string;
 }

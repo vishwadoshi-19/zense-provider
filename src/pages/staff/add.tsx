@@ -335,7 +335,17 @@ const AddStaffPage = () => {
         toast({
           title: "User Creation Failed",
           description:
-            result.message || "An error occurred during user creation.",
+            `${result.message} , Try a different phone number` || "An error occurred during user creation.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (result.alreadyExists) {
+        toast({
+          title: "Phone Number Already In Use",
+          description: result.message || "This number is already in use, try edit option.",
           variant: "destructive",
         });
         setIsLoading(false);

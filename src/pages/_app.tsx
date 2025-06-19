@@ -5,6 +5,7 @@ import OfflineAlert from "@/components/common/OfflineAlert";
 import Head from "next/head";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { useRouter } from "next/router";
+import { Toaster } from "@/components/ui/toaster";
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -31,6 +32,7 @@ export default function App({ Component, pageProps }: AppProps) {
         </ProtectedRoute>
       )}
       <OfflineAlert />
+      <Toaster />
     </AuthProvider>
   );
 }

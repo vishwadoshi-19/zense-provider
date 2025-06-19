@@ -28,6 +28,7 @@ const JobsPage = () => {
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [fetchingStaff, setFetchingStaff] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
+  const [generatingPins, setGeneratingPins] = useState(false);
 
   // Redirect if not logged in
   React.useEffect(() => {
@@ -185,6 +186,35 @@ const JobsPage = () => {
     }
   };
 
+  // Function to generate PINs for all jobs
+  const handleGeneratePins = async () => {
+    setGeneratingPins(true);
+    try {
+      const response = await fetch('/api/jobs/generatePins', { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to generate PINs');
+      alert(data.message || 'PINs generated successfully!');
+      // Refetch jobs
+      if (user) {
+        // Re-run the fetchJobs logic
+        setFetchingJobs(true);
+        setDataLoading(true);
+        const querySnapshot = await getDocs(collection(db, 'jobs'));
+        const jobs: Job2[] = querySnapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+        })) as Job2[];
+        setJobList(jobs);
+        setDataLoading(false);
+        setFetchingJobs(false);
+      }
+    } catch (error: any) {
+      alert(error.message || 'Failed to generate PINs');
+    } finally {
+      setGeneratingPins(false);
+    }
+  };
+
   if (loading || fetchingJobs || fetchingStaff || dataLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -206,6 +236,15 @@ const JobsPage = () => {
             View, assign, and manage customer job requests
           </p>
         </div>
+
+        {/* Generate PINs Button */}
+        <button
+          onClick={handleGeneratePins}
+          disabled={generatingPins}
+          className={`mb-4 px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition ${generatingPins ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {generatingPins ? 'Generating PINs...' : 'Generate PINs for All Jobs'}
+        </button>
 
         <JobList
           jobList={jobList}
