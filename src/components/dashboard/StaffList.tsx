@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Staff } from "@/types";
-import { Plus, Search, Edit, Trash, X } from "lucide-react";
+import { Plus, Search, Edit, Trash, X, Copy } from "lucide-react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/utils/firebase";
+import { toast } from "@/hooks/use-toast";
 
 console.log("StaffList component loaded");
 
@@ -18,6 +19,9 @@ interface StaffListProps {
   onEditStaff: (staff: Staff) => void;
   onDeleteStaff: (staffId: string) => void;
   onViewStaff: (staffId: string) => void;
+  batchMode?: boolean;
+  selectedStaffIds?: string[];
+  onSelectStaff?: (id: string) => void;
 }
 
 const StaffList = ({
@@ -26,6 +30,9 @@ const StaffList = ({
   onEditStaff,
   onDeleteStaff,
   onViewStaff,
+  batchMode = false,
+  selectedStaffIds = [],
+  onSelectStaff = () => {},
 }: StaffListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("All");
@@ -165,78 +172,137 @@ const StaffList = ({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentStaff.length > 0 ? (
-                // Debugging line
-                currentStaff.map((staff) => (
-                  <tr key={staff.id} className=" hover:bg-gray-50">
-                    <td
-                      className="px-6 cursor-pointer py-4 whitespace-nowrap"
-                      onClick={() => {
-                        console.log("Staff clicked", staff.id);
-                        onViewStaff(staff.id);
-                      }}
+                currentStaff.map((staff) => {
+                  const isSelected = batchMode && selectedStaffIds.includes(staff.id);
+                  return (
+                    <tr
+                      key={staff.id}
+                      className={`hover:bg-gray-50 ${batchMode && isSelected ? 'bg-green-50' : ''}`}
                     >
-                      <div className="text-sm font-medium text-gray-900">
-                        {staff?.name || staff?.fullName}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {capitalize(staff?.jobRole)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {staff?.phone
-                          ? staff.phone.replace(/^(\+91|91)/, "")
-                          : ""}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {staff?.experienceYears} years
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {capitalize(staff?.status)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            // Prevent row click when clicking buttons
-                            e.stopPropagation();
-                            onEditStaff(staff);
-                          }}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            // Prevent row click when clicking buttons
-                            e.stopPropagation();
-                            if (
-                              window.confirm(
-                                "Are you sure you want to delete this staff member?"
-                              )
-                            ) {
-                              onDeleteStaff(staff.id);
-                            }
-                          }}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      <td
+                        className="px-6 cursor-pointer py-4 whitespace-nowrap flex items-center gap-2"
+                        onClick={() => {
+                          if (batchMode) {
+                            onSelectStaff(staff.id);
+                          } else {
+                            onViewStaff(staff.id);
+                          }
+                        }}
+                      >
+                        {batchMode && (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => onSelectStaff(staff.id)}
+                            onClick={e => e.stopPropagation()}
+                            className="accent-green-600"
+                          />
+                        )}
+                        <div className="text-sm font-medium text-gray-900">
+                          {staff?.name || staff?.fullName}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {capitalize(staff?.jobRole)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {staff?.phone
+                            ? staff.phone.replace(/^(\+91|91)/, "")
+                            : ""}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {staff?.experienceYears} years
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {capitalize(staff?.status)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              // Prevent row click when clicking buttons
+                              e.stopPropagation();
+                              onEditStaff(staff);
+                            }}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              // Prepare the WhatsApp-formatted message
+                              console.log("Staff details", staff);  
+                              const name = staff?.name || staff?.fullName || "";
+                              const age = staff?.dateOfBirth ? (() => {
+                                const dob = new Date(staff.dateOfBirth);
+                                const diffMs = Date.now() - dob.getTime();
+                                const ageDt = new Date(diffMs);
+                                return Math.abs(ageDt.getUTCFullYear() - 1970);
+                              })() : null;
+                              const gender = staff?.gender ? capitalize(staff.gender) : null;
+                              const experience = staff?.experienceYears ? `${staff.experienceYears} years` : null;
+                              let summary = [];
+                              if (age) summary.push(`• *Age:* ${age}`);
+                              if (gender) summary.push(`• *Gender:* ${gender}`);
+                              if (experience) summary.push(`• *Experience:* ${experience}`);
+                              const summaryText = summary.length > 0 ? `*Summary:*\n${summary.join("\n")}` : "";
+                              const link = `zense.in/attendant/${staff.id}`;
+                              // WhatsApp formatting: *bold*, \n for new lines
+                              const message = `*${name}*\n\n${summaryText}\n\n*View Profile:* ${link}`;
+                              try {
+                                await navigator.clipboard.writeText(message);
+                                toast({
+                                  title: "Copied!",
+                                  description: "Staff details copied in WhatsApp format.",
+                                });
+                              } catch (err) {
+                                toast({
+                                  title: "Copy failed",
+                                  description: "Could not copy to clipboard.",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                            className="text-green-600 hover:text-green-900"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              // Prevent row click when clicking buttons
+                              e.stopPropagation();
+                              if (
+                                window.confirm(
+                                  "Are you sure you want to delete this staff member?"
+                                )
+                              ) {
+                                onDeleteStaff(staff.id);
+                              }
+                            }}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td

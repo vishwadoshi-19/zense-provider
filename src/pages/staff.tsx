@@ -16,12 +16,15 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/utils/firebase";
+import { toast } from "@/hooks/use-toast";
 
 const StaffPage = () => {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -29,75 +32,6 @@ const StaffPage = () => {
       router.push("/login");
     }
   }, [user, authLoading, router]);
-
-  // Fetch staff data from Firestore
-  // useEffect(() => {
-  //   const fetchStaff = async () => {
-  //     console.log("Fetching staff...");
-  //     if (user) {
-  //       try {
-  //         const staffCollectionRef = collection(db, "users");
-  //         // Query all documents in the users collection
-  //         const q = query(staffCollectionRef);
-  //         console.log("Firestore query:", q);
-  //         const querySnapshot = await getDocs(q);
-  //         console.log("Query snapshot size:", querySnapshot.size);
-  //         const fetchedStaff: Staff[] = querySnapshot.docs.map((doc) => {
-  //           const data = doc.data();
-  //           console.log("Fetched staff data:", data);
-  //           return {
-  //             id: doc.id,
-  //             providerId: data.providerId || "",
-  //             name: data.name || "",
-  //             type: data.jobRole || "attendant",
-  //             contactNumber: data.phone || "",
-  //             email: data.email || "",
-  //             address: data.address || "",
-  //             experience: data.experienceYears || 0,
-  //             availability: Array.isArray(data.availability)
-  //               ? data.availability
-  //               : [],
-  //             currentAssignment: data.currentAssignment || null,
-  //             createdAt: data.createdAt
-  //               ? (data.createdAt as Timestamp).toDate()
-  //               : new Date(),
-  //             updatedAt: data.updatedAt
-  //               ? (data.updatedAt as Timestamp).toDate()
-  //               : new Date(),
-  //             isActive: data.isActive || false,
-  //             aadharVerified: data.aadharVerified || false,
-  //             policeVerified: data.policeVerified || false,
-  //           };
-  //         });
-  //         setStaffList(fetchedStaff);
-  //         console.log("Staff list updated:", fetchedStaff);
-  //       } catch (error) {
-  //         console.error("Error fetching staff:", error);
-  //         // Optionally set an error state
-  //       } finally {
-  //         setDataLoading(false);
-  //         console.log("Data loading set to false.");
-  //       }
-  //     } else {
-  //       console.log("User is not logged in.");
-  //       setDataLoading(false); // Set loading to false if no user is logged in
-  //       console.log("Data loading set to false (no user).");
-  //     }
-  //   };
-
-  //   // Fetch staff only when user is available
-  //   if (user) {
-  //     fetchStaff();
-  //   } else {
-  //     // If user is not available and authLoading is false, it means the user is not logged in
-  //     if (!authLoading) {
-  //       setDataLoading(false);
-  //       console.log(
-  //         "Data loading set to false (user not available and not auth loading)."
-  //       );
-  //     }
-  //   }
-  // }, [user, authLoading, router]); // Keep authLoading in dependencies to handle initial loading state
 
   // Fetch staff data from API when user is available
   useEffect(() => {
@@ -231,6 +165,61 @@ const StaffPage = () => {
     router.push(`/staff/${staffId}`);
   };
 
+  const handleBatchCopy = async () => {
+    if (selectedStaffIds.length === 0) {
+      toast({
+        title: "No profiles selected",
+        description: "Please select at least one profile to copy.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const selectedStaff = staffList.filter((s) => selectedStaffIds.includes(s.id));
+    const formatProfile = (staff: any, idx: number) => {
+      const name = (staff?.name || staff?.fullName || "").trim();
+      const age = staff?.dateOfBirth ? (() => {
+        const dob = new Date(staff.dateOfBirth);
+        const diffMs = Date.now() - dob.getTime();
+        const ageDt = new Date(diffMs);
+        return Math.abs(ageDt.getUTCFullYear() - 1970);
+      })() : null;
+      const gender = staff?.gender ? staff.gender.charAt(0).toUpperCase() + staff.gender.slice(1).toLowerCase() : null;
+      const experience = staff?.experienceYears ? `${staff.experienceYears} years` : null;
+      let summary = [];
+      if (age) summary.push(`• *Age:* ${age}`);
+      if (gender) summary.push(`• *Gender:* ${gender}`);
+      if (experience) summary.push(`• *Experience:* ${experience}`);
+      const summaryText = summary.length > 0 ? summary.join("\n") : "";
+      const link = `zense.in/attendant/${staff.id}`;
+      return `*${idx + 1}. ${name}*
+${summaryText ? summaryText + "\n" : ""}*View Profile:* ${link}`;
+    };
+    const message = `Hi ,\nPlease find the below profiles :\n\n${selectedStaff.map(formatProfile).join("\n\n")}`;
+    try {
+      await navigator.clipboard.writeText(message);
+      toast({
+        title: "Copied!",
+        description: "Selected profiles copied in WhatsApp format.",
+      });
+      setBatchMode(false);
+      setSelectedStaffIds([]);
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Could not copy to clipboard.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSelectStaff = (id: string) => {
+    setSelectedStaffIds((prev) => prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]);
+  };
+  const handleCancelBatch = () => {
+    setBatchMode(false);
+    setSelectedStaffIds([]);
+  };
+
   if (authLoading || dataLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -242,19 +231,48 @@ const StaffPage = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Manage Staff</h1>
-          <p className="text-gray-500 mt-1">
-            Add, edit, and manage your staff members
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Manage Staff</h1>
+            <p className="text-gray-500 mt-1">
+              Add, edit, and manage your staff members
+            </p>
+          </div>
+          <div>
+            {!batchMode ? (
+              <button
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                onClick={() => setBatchMode(true)}
+              >
+                Batch Copy
+              </button>
+            ) : (
+              <>
+                <button
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
+                  onClick={handleBatchCopy}
+                >
+                  Copy Selected
+                </button>
+                <button
+                  className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                  onClick={handleCancelBatch}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
         </div>
-
         <StaffList
           staffList={staffList}
           onAddStaff={handleAddStaff}
           onEditStaff={handleEditStaff}
           onDeleteStaff={handleDeleteStaff}
           onViewStaff={handleViewStaff}
+          batchMode={batchMode}
+          selectedStaffIds={selectedStaffIds}
+          onSelectStaff={handleSelectStaff}
         />
       </div>
     </Layout>
