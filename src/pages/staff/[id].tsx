@@ -23,6 +23,8 @@ import { downloadResumeAsPDF } from "@/lib/downloadPDF";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { profile } from "console";
+import { getGroupedDutiesByRole, DUTY_CATEGORIES, DUTIES } from "@/constants/duties";
+import { Lock } from "lucide-react";
 
 function capitalize(word: string | undefined | null) {
   if (!word) return "";
@@ -381,47 +383,50 @@ const StaffDetailPage = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="py-2">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {Object.entries(staff.services || {})
-                      .filter(([category]) =>
-                        [
-                          "Personal_care",
-                          "Nutrition",
-                          "Hygiene",
-                          "Support",
-                          "Mobility",
-                          "Other",
-                        ].includes(category)
-                      )
-                      .map(([category, services]) => (
-                        <div key={category}>
-                          <h3 className="text-base font-semibold text-green-700 mb-2">
-                            {category}
-                          </h3>
-                          <ul className="space-y-1">
-                            {Array.isArray(services) ? (
-                              (services as string[]).map((service, index) => (
-                                <li
-                                  key={index}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Check className="h-4 w-4 text-green-600 shrink-0" />
-                                  <span className="text-sm text-gray-800">
-                                    {capitalize(service.trim())}
-                                  </span>
-                                </li>
-                              ))
-                            ) : (
-                              <li className="flex items-center gap-2">
-                                <Check className="h-4 w-4 text-green-600 shrink-0" />
-                                <span className="text-sm text-gray-800">
-                                  {capitalize((services as string).trim())}
-                                </span>
-                              </li>
-                            )}
-                          </ul>
-                        </div>
-                      ))}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    {staff.jobRole
+                      ? Object.entries(getGroupedDutiesByRole(staff.jobRole as "nurse" | "attendant")).map(
+                          ([category, group]: [string, { mandatory: any[]; optional: any[] }]) => {
+                            const selectedMandatory: any[] = group.mandatory.filter((duty: any) =>
+                              staff.services?.[category]?.includes(duty.label)
+                            );
+                            const selectedOptional: any[] = group.optional.filter((duty: any) =>
+                              staff.services?.[category]?.includes(duty.label)
+                            );
+                            if (!selectedMandatory.length && !selectedOptional.length) return null;
+                            return (
+                              <div key={category}>
+                                <h3 className="text-base font-semibold text-green-700 mb-1">
+                                  {category}
+                                </h3>
+                                <ul className="space-y-1">
+                                  {selectedMandatory.map((duty: any) => (
+                                    <li key={duty.key} className="flex items-center gap-2">
+                                      <span className="inline-flex items-center">
+                                        <Check className="h-4 w-4 text-green-600 shrink-0" />
+                                        <span className="text-sm text-green-700 font-semibold ml-1">
+                                          {duty.label}
+                                        </span>
+                                        <Lock className="h-3 w-3 text-gray-400 ml-1" />
+                                      </span>
+                                    </li>
+                                  ))}
+                                  {selectedOptional.map((duty: any) => (
+                                    <li key={duty.key} className="flex items-center gap-2">
+                                      <span className="inline-flex items-center">
+                                        <Check className="h-4 w-4 text-gray-400 shrink-0" />
+                                        <span className="text-sm text-gray-700 ml-1">
+                                          {duty.label}
+                                        </span>
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            );
+                          }
+                        )
+                      : <div className="text-sm text-muted-foreground">No job role selected</div>}
                   </div>
                 </CardContent>
               </Card>
@@ -465,8 +470,8 @@ const StaffDetailPage = () => {
               ) : (
                 <div className="space-y-3">
                   {reviews && reviews.length > 0 ? (
-                    reviews.map((review: any, index: any) => (
-                      <div key={index} className="border rounded-lg p-3">
+                    reviews.slice(0, 2).map((review: any, index: any) => (
+                      <div key={index} className="border rounded-lg p-2">
                         <div className="mb-1">
                           <p className="text-xs italic mb-1">
                             "{review?.text}"
@@ -486,13 +491,13 @@ const StaffDetailPage = () => {
                             ))}
                           </div>
                         </div>
-                        <p className="text-sm font-medium">
+                        <p className="text-xs font-medium">
                           - {review?.customerName}
                         </p>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center">
+                    <p className="text-xs text-muted-foreground text-center">
                       No reviews available yet.
                     </p>
                   )}
@@ -534,6 +539,19 @@ const StaffDetailPage = () => {
                 width: 210mm;
                 height: 297mm;
               }
+            }
+            #resume {
+              font-size: 9pt;
+              padding: 8px 8px;
+              max-height: 297mm;
+              overflow: hidden;
+            }
+            .card-content {
+              padding: 4px 0;
+            }
+            .card-title {
+              font-size: 10pt;
+              margin-bottom: 2px;
             }
           `}</style>
         </div>

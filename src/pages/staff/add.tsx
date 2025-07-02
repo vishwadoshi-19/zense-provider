@@ -3,7 +3,7 @@ import Layout from "@/components/common/Layout";
 
 import type React from "react";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -28,7 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
-import { AlertCircle, CheckCircle2, Mic, StopCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, Mic, StopCircle, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import {
@@ -42,6 +42,7 @@ import { set } from "date-fns";
 
 import { StaffData } from "@/types/StaffData";
 import { useRouter } from "next/router";
+import { getGroupedDutiesByRole, Duty } from "@/constants/duties";
 
 const SERVICES = {
   Mobility: [
@@ -173,6 +174,52 @@ const AddStaffPage = () => {
     shiftType: "", // "12h", "24h", or "both"
     shiftTime: "", // "day", "night", or "both"
   });
+
+  const [dutySelections, setDutySelections] = useState<{ [key: string]: boolean }>({});
+  const [lastJobRole, setLastJobRole] = useState<string>("");
+
+  // When jobRole changes, reset selections and preselect mandatory duties
+  useEffect(() => {
+    if (formData.jobRole && formData.jobRole !== lastJobRole) {
+      if (lastJobRole) {
+        if (!window.confirm("Changing the job role will clear all previous duty selections. Continue?")) {
+          setFormData((prev) => ({ ...prev, jobRole: lastJobRole }));
+          return;
+        }
+      }
+      const grouped = getGroupedDutiesByRole(formData.jobRole as "nurse" | "attendant");
+      const newSelections: { [key: string]: boolean } = {};
+      Object.values(grouped).forEach(({ mandatory }) => {
+        mandatory.forEach((duty) => {
+          newSelections[duty.key] = true;
+        });
+      });
+      setDutySelections(newSelections);
+      setLastJobRole(formData.jobRole);
+    }
+  }, [formData.jobRole]);
+
+  // Handle duty checkbox
+  const handleDutyChange = (duty: Duty, checked: boolean) => {
+    setDutySelections((prev) => ({ ...prev, [duty.key]: checked }));
+  };
+
+  // On submit, build grouped services object
+  const buildServicesObject = () => {
+    const grouped = getGroupedDutiesByRole(formData.jobRole as "nurse" | "attendant");
+    const services: { [category: string]: string[] } = {};
+    Object.entries(grouped).forEach(([category, { mandatory, optional }]) => {
+      const selected: string[] = [];
+      mandatory.forEach((duty) => {
+        if (dutySelections[duty.key]) selected.push(duty.label);
+      });
+      optional.forEach((duty) => {
+        if (dutySelections[duty.key]) selected.push(duty.label);
+      });
+      if (selected.length) services[category] = selected;
+    });
+    return services;
+  };
 
   // Handle phone number input
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -454,7 +501,7 @@ const AddStaffPage = () => {
         experienceYears: formData.experience || "", // Ensure experience is saved as string
         preferredShifts: formData.preferredShifts || [],
         languagesKnown: formData.languages || [],
-        extraServicesOffered: formData.services,
+        extraServicesOffered: buildServicesObject(),
         foodPreference: formData.foodPreference || "",
         smokes: formData.smoking || "",
         carryOwnFood12hrs: formData.carryFood || "",
@@ -477,7 +524,7 @@ const AddStaffPage = () => {
         district: formData.district || [], // Include new field
         shiftType: formData.shiftType,
         shiftTime: formData.shiftTime,
-        services: formData.services || [], // Include new field
+        services: buildServicesObject(),
         // Add other fields as needed based on firexport_basic_1745844871617.json and FormState type
       };
 
@@ -1471,49 +1518,62 @@ const AddStaffPage = () => {
                             <Separator />
 
                             <div className="space-y-3 text-lg font-medium">
-                              <Label className="text-lg font-medium">
-                                Additional Services
-                              </Label>
-                              {Object.entries(SERVICES).map(
-                                ([category, services]) => (
-                                  <div key={category} className="space-y-2">
-                                    <h4 className="text-sm font-medium">
-                                      {category}
-                                    </h4>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                      {services.map((service) => (
-                                        <div
-                                          key={service}
-                                          className="flex items-center space-x-2"
-                                        >
-                                          <Checkbox
-                                            id={`service-${service}`}
-                                            checked={
-                                              formData.services[
-                                                category
-                                              ]?.includes(
-                                                service.toLowerCase()
-                                              ) || false
-                                            }
-                                            onCheckedChange={(checked) =>
-                                              handleCheckboxChange(
-                                                category,
-                                                service.toLowerCase(),
-                                                checked as boolean
-                                              )
-                                            }
-                                          />
-                                          <Label
-                                            htmlFor={`service-${service}`}
-                                            className="font-normal"
-                                          >
-                                            {service}
-                                          </Label>
+                              <Label className="text-lg font-medium">Duties (Annexure A)</Label>
+                              {formData.jobRole ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {Object.entries(getGroupedDutiesByRole(formData.jobRole as "nurse" | "attendant")).map(
+                                    ([category, group]: [string, { mandatory: Duty[]; optional: Duty[] }]) => (
+                                      <div key={category} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                                        <h4 className="text-base font-semibold mb-2 text-gray-800">{category}</h4>
+                                        <div className="space-y-1">
+                                          {group.mandatory.map((duty: Duty) => (
+                                            <label key={duty.key} className="flex items-center gap-2 cursor-pointer hover:bg-green-50 rounded px-1 py-0.5 relative group">
+                                              <Checkbox
+                                                id={`duty-${duty.key}`}
+                                                checked={!!dutySelections[duty.key]}
+                                                onCheckedChange={(checked) => handleDutyChange(duty, checked as boolean)}
+                                                disabled
+                                              />
+                                              <span className="text-sm text-green-700 font-medium flex items-center">
+                                                {duty.label}
+                                                {duty.tooltip && (
+                                                  <span className="ml-2 cursor-help relative flex items-center">
+                                                    <Info className="h-4 w-4 text-green-500" />
+                                                    <span className="absolute left-1/2 z-10 hidden group-hover:block bg-black text-white text-xs rounded px-2 py-1 -translate-x-1/2 mt-1 whitespace-nowrap min-w-max">
+                                                      {duty.tooltip}
+                                                    </span>
+                                                  </span>
+                                                )}
+                                              </span>
+                                            </label>
+                                          ))}
+                                          {group.optional.map((duty: Duty) => (
+                                            <label key={duty.key} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-1 py-0.5 relative group">
+                                              <Checkbox
+                                                id={`duty-${duty.key}`}
+                                                checked={!!dutySelections[duty.key]}
+                                                onCheckedChange={(checked) => handleDutyChange(duty, checked as boolean)}
+                                              />
+                                              <span className="text-sm text-gray-700 flex items-center">
+                                                {duty.label}
+                                                {duty.tooltip && (
+                                                  <span className="ml-2 cursor-help relative flex items-center">
+                                                    <Info className="h-4 w-4 text-gray-400" />
+                                                    <span className="absolute left-1/2 z-10 hidden group-hover:block bg-black text-white text-xs rounded px-2 py-1 -translate-x-1/2 mt-1 whitespace-nowrap min-w-max">
+                                                      {duty.tooltip}
+                                                    </span>
+                                                  </span>
+                                                )}
+                                              </span>
+                                            </label>
+                                          ))}
                                         </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="text-sm text-muted-foreground">Select a job role to see duties</div>
                               )}
                             </div>
                           </div>
