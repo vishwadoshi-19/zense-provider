@@ -186,8 +186,8 @@ const StaffPage = () => {
       const gender = staff?.gender ? staff.gender.charAt(0).toUpperCase() + staff.gender.slice(1).toLowerCase() : null;
       const experience = staff?.experienceYears ? `${staff.experienceYears} years` : null;
       let summary = [];
-      if (age) summary.push(`• *Age:* ${age}`);
       if (gender) summary.push(`• *Gender:* ${gender}`);
+      if (age) summary.push(`• *Age:* ${age}`);
       if (experience) summary.push(`• *Experience:* ${experience}`);
       const summaryText = summary.length > 0 ? summary.join("\n") : "";
       const link = `zense.in/attendant/${staff.id}`;

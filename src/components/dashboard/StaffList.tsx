@@ -255,13 +255,13 @@ const StaffList = ({
                               const gender = staff?.gender ? capitalize(staff.gender) : null;
                               const experience = staff?.experienceYears ? `${staff.experienceYears} years` : null;
                               let summary = [];
-                              if (age) summary.push(`• *Age:* ${age}`);
                               if (gender) summary.push(`• *Gender:* ${gender}`);
+                              if (age) summary.push(`• *Age:* ${age}`);
                               if (experience) summary.push(`• *Experience:* ${experience}`);
-                              const summaryText = summary.length > 0 ? `*Summary:*\n${summary.join("\n")}` : "";
+                              const summaryText = summary.length > 0 ? `${summary.join("\n")}` : "";
                               const link = `zense.in/attendant/${staff.id}`;
                               // WhatsApp formatting: *bold*, \n for new lines
-                              const message = `*${name}*\n\n${summaryText}\n\n*View Profile:* ${link}`;
+                              const message = `*${name}*\n${summaryText}\n\n*View Profile:* ${link}`;
                               try {
                                 await navigator.clipboard.writeText(message);
                                 toast({
