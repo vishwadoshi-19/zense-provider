@@ -1609,7 +1609,6 @@ const EditStaffPage = () => {
                                   className="flex items-center space-x-2"
                                 >
                                   <Checkbox
-                                    required
                                     id={`district-${district}`}
                                     checked={
                                       Array.isArray(formData.district) &&
