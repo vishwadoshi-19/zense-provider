@@ -76,52 +76,7 @@ const SERVICES = {
 
 const Req = () => <span className="text-red-500 text-sm">*</span>;
 
-type District = "delhi" | "mumbai" | "bangalore";
-
-const DISTRICTS: string[] = ["Delhi", "Mumbai", "Bangalore"];
-
-const SUB_DISTRICTS: Record<District, string[]> = {
-  delhi: [
-    "Central Delhi",
-    "East Delhi",
-    "New Delhi",
-    "North Delhi",
-    "North East Delhi",
-    "North West Delhi",
-    "Shahdara",
-    "South Delhi",
-    "South East Delhi",
-    "South West Delhi",
-    "West Delhi",
-  ],
-  mumbai: [
-    "Colaba",
-    "Dadar",
-    "Andheri",
-    "Bandra",
-    "Borivali",
-    "Goregaon",
-    "Juhu",
-    "Kurla",
-    "Mulund",
-    "Powai",
-    "Vikhroli",
-  ],
-  bangalore: [
-    "Bangalore East",
-    "Bangalore North",
-    "Bangalore South",
-    "Yelahanka",
-    "KR Puram",
-    "Jayanagar",
-    "Rajajinagar",
-    "BTM Layout",
-    "Malleswaram",
-    "Basavanagudi",
-    "Whitefield",
-    "Electronic City",
-  ],
-};
+const DISTRICTS: string[] = ["Delhi", "Gurgaon", "Noida", "Ghaziabad", "Faridabad"];
 
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
@@ -215,7 +170,8 @@ const AddStaffPage = () => {
     // New fields for Agency and Location
     providerId: "",
     district: [] as string[],
-    subDistricts: [] as string[],
+    shiftType: "", // "12h", "24h", or "both"
+    shiftTime: "", // "day", "night", or "both"
   });
 
   // Handle phone number input
@@ -251,7 +207,6 @@ const AddStaffPage = () => {
       if (
         category === "preferredShifts" ||
         category === "district" ||
-        category === "subDistricts" ||
         category === "languages"
       ) {
         const arr = Array.isArray(prev[category])
@@ -520,7 +475,8 @@ const AddStaffPage = () => {
           panDocument: panCardURL || "", // Use panDocument for consistency
         },
         district: formData.district || [], // Include new field
-        subDistricts: formData.subDistricts || [], // Include new field
+        shiftType: formData.shiftType,
+        shiftTime: formData.shiftTime,
         services: formData.services || [], // Include new field
         // Add other fields as needed based on firexport_basic_1745844871617.json and FormState type
       };
@@ -655,7 +611,8 @@ const AddStaffPage = () => {
                         }[], // New field
                         providerId: "", // Reset new field
                         district: [], // Reset new field
-                        subDistricts: [], // Reset new field
+                        shiftType: "", // Reset new field
+                        shiftTime: "", // Reset new field
                       });
                     }}
                   >
@@ -1628,128 +1585,6 @@ const AddStaffPage = () => {
                                   ))}
                                 </div>
                               </div>
-
-                              {/* Subdistricts */}
-                              {/* Sub-districts based on selected districts */}
-                              {formData.district.length > 0 && (
-                                <div className="space-y-3 md:col-span-2">
-                                  <Label>Subdistricts to Serve</Label>
-                                  <div className="flex items-center space-x-2 mb-2">
-                                    <Checkbox
-                                      required
-                                      id="all-subdistricts"
-                                      checked={
-                                        formData.district.length > 0 &&
-                                        formData.subDistricts.length ===
-                                          formData.district.reduce(
-                                            (acc, district) => {
-                                              const normalizedDistrict =
-                                                district.toLowerCase() as District;
-                                              return (
-                                                acc +
-                                                (SUB_DISTRICTS[
-                                                  normalizedDistrict
-                                                ]?.length || 0)
-                                              );
-                                            },
-                                            0
-                                          )
-                                      }
-                                      onCheckedChange={(checked) => {
-                                        if (checked) {
-                                          // Select all subdistricts from selected districts
-                                          const allSubdistricts: string[] = [];
-                                          formData.district.forEach(
-                                            (district) => {
-                                              const normalizedDistrict =
-                                                district.toLowerCase() as District;
-                                              if (
-                                                SUB_DISTRICTS[
-                                                  normalizedDistrict
-                                                ]
-                                              ) {
-                                                SUB_DISTRICTS[
-                                                  normalizedDistrict
-                                                ].forEach((subdistrict) => {
-                                                  allSubdistricts.push(
-                                                    subdistrict.toLowerCase()
-                                                  );
-                                                });
-                                              }
-                                            }
-                                          );
-
-                                          setFormData((prev) => ({
-                                            ...prev,
-                                            subDistricts: allSubdistricts,
-                                          }));
-                                        } else {
-                                          // Deselect all subdistricts
-                                          setFormData((prev) => ({
-                                            ...prev,
-                                            subDistricts: [],
-                                          }));
-                                        }
-                                      }}
-                                    />
-                                    <Label
-                                      htmlFor="all-subdistricts"
-                                      className="font-normal"
-                                    >
-                                      Select All Subdistricts
-                                    </Label>
-                                  </div>
-
-                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                    {formData.district.map((district) => {
-                                      const normalizedDistrict =
-                                        district.toLowerCase() as District;
-                                      return SUB_DISTRICTS[
-                                        normalizedDistrict
-                                      ]?.map((subdistrict) => (
-                                        <div
-                                          key={subdistrict}
-                                          className="flex items-center space-x-2"
-                                        >
-                                          <Checkbox
-                                            id={`subdistrict-${subdistrict}`}
-                                            checked={formData.subDistricts.includes(
-                                              subdistrict.toLowerCase()
-                                            )}
-                                            onCheckedChange={(checked) => {
-                                              if (checked) {
-                                                setFormData((prev) => ({
-                                                  ...prev,
-                                                  subDistricts: [
-                                                    ...prev.subDistricts,
-                                                    subdistrict.toLowerCase(),
-                                                  ],
-                                                }));
-                                              } else {
-                                                setFormData((prev) => ({
-                                                  ...prev,
-                                                  subDistricts:
-                                                    prev.subDistricts.filter(
-                                                      (item) =>
-                                                        item !==
-                                                        subdistrict.toLowerCase()
-                                                    ),
-                                                }));
-                                              }
-                                            }}
-                                          />
-                                          <Label
-                                            htmlFor={`subdistrict-${subdistrict}`}
-                                            className="font-normal"
-                                          >
-                                            {subdistrict}
-                                          </Label>
-                                        </div>
-                                      ));
-                                    })}
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           </div>
                         </TabsContent>
@@ -1823,71 +1658,41 @@ const AddStaffPage = () => {
                             </div>
 
                             <div className="space-y-4">
-                              <h3 className="text-lg font-medium">
-                                Shift Preferences
-                              </h3>
-
-                              <div className="space-y-3">
-                                <Label>Preferred Shifts</Label>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                  {[
-                                    "Morning (6AM-2PM)",
-                                    "Afternoon (2PM-10PM)",
-                                    "Night (10PM-6AM)",
-                                    "Full Day (9AM-6PM)",
-                                    "24 Hours",
-                                    "Part Time",
-                                    "Flexible Hours",
-                                  ].map((shift) => (
-                                    <div
-                                      key={shift}
-                                      className="flex items-center space-x-2"
-                                    >
-                                      <Checkbox
-                                        id={`shift-${shift}`}
-                                        checked={
-                                          Array.isArray(
-                                            formData.preferredShifts
-                                          ) &&
-                                          formData.preferredShifts.some(
-                                            (s) =>
-                                              s.toLowerCase() ===
-                                              shift.toLowerCase()
-                                          )
-                                        }
-                                        onCheckedChange={(checked) => {
-                                          setFormData((prev) => {
-                                            if (checked) {
-                                              return {
-                                                ...prev,
-                                                preferredShifts: [
-                                                  ...(prev.preferredShifts ||
-                                                    []),
-                                                  shift,
-                                                ],
-                                              };
-                                            } else {
-                                              return {
-                                                ...prev,
-                                                preferredShifts:
-                                                  prev.preferredShifts.filter(
-                                                    (s) =>
-                                                      s.toLowerCase() !==
-                                                      shift.toLowerCase()
-                                                  ),
-                                              };
-                                            }
-                                          });
-                                        }}
-                                      />
-                                      <Label
-                                        htmlFor={`shift-${shift}`}
-                                        className="font-normal"
-                                      >
-                                        {shift}
-                                      </Label>
-                                    </div>
-                                  ))}
+                              <h3 className="text-lg font-medium">Shift Preferences</h3>
+                              <div className="grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                  <Label htmlFor="shiftType">Shift Type <Req /></Label>
+                                  <Select
+                                    value={formData.shiftType}
+                                    onValueChange={(value) => setFormData((prev) => ({ ...prev, shiftType: value }))}
+                                    required
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select shift type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="12h">12 Hours</SelectItem>
+                                      <SelectItem value="24h">24 Hours</SelectItem>
+                                      <SelectItem value="both">Both</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="shiftTime">Shift Time <Req /></Label>
+                                  <Select
+                                    value={formData.shiftTime}
+                                    onValueChange={(value) => setFormData((prev) => ({ ...prev, shiftTime: value }))}
+                                    required
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select shift time" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="day">Day</SelectItem>
+                                      <SelectItem value="night">Night</SelectItem>
+                                      <SelectItem value="both">Both</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                               </div>
                             </div>

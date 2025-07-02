@@ -94,7 +94,8 @@ const StaffDetailPage = () => {
                 panNumber: "",
               },
               district: staff.district || [],
-              subDistricts: staff.subDistricts || [],
+              shiftType: staff.shiftType || "",
+              shiftTime: staff.shiftTime || "",
             });
             if (staff?.experienceYears === "less-than-1") {
               setStaff((prevState: any) => ({
@@ -335,10 +336,14 @@ const StaffDetailPage = () => {
                     <span className="text-muted-foreground">Smoking:</span>
                     <span>{capitalize(staff?.smokes) || "N/A"}</span>
                   </div>
-                  {/* <div className="flex justify-between">
-                    <span className="text-muted-foreground">Drinking:</span>
-                    <span>No</span>
-                  </div> */}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Shift Type:</span>
+                    <span>{staff.shiftType ? staff.shiftType.toUpperCase() : "N/A"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Shift Time:</span>
+                    <span>{staff.shiftTime ? staff.shiftTime.toUpperCase() : "N/A"}</span>
+                  </div>
                 </CardContent>
               </Card>
 
