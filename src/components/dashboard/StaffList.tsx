@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Staff } from "@/types";
-import { Plus, Search, Edit, Trash, X, Copy } from "lucide-react";
+import { Plus, Search, Edit, Trash, X, Copy, ArrowDownToLine } from "lucide-react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/utils/firebase";
 import { toast } from "@/hooks/use-toast";
+import { generateStaffPDFReport } from "@/lib/downloadPDF";
+import { getGroupedDutiesByRole } from "@/constants/duties";
 
 console.log("StaffList component loaded");
 
@@ -39,7 +41,28 @@ const StaffList = ({
   const [filterAvailability, setFilterAvailability] = useState<string>("All");
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [downloadingStates, setDownloadingStates] = useState<{ [key: string]: boolean }>({});
   const itemsPerPage = 10;
+
+  // PDF download handler for individual staff
+  const handleDownloadPDF = async (staff: any) => {
+    const staffId = staff.id;
+    setDownloadingStates(prev => ({ ...prev, [staffId]: true }));
+    
+    try {
+      const groupedDuties = staff?.jobRole ? getGroupedDutiesByRole(staff.jobRole) : {};
+      // For now, we'll pass empty reviews array since we don't have reviews in the list view
+      await generateStaffPDFReport(staff, groupedDuties, []);
+    } catch (err) {
+      toast({
+        title: "Download failed",
+        description: "Failed to download PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingStates(prev => ({ ...prev, [staffId]: false }));
+    }
+  };
 
   const filteredStaff = staffList.filter((staff) => {
     const matchesSearch =
@@ -279,6 +302,25 @@ const StaffList = ({
                             className="text-green-600 hover:text-green-900"
                           >
                             <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadPDF(staff);
+                            }}
+                            disabled={downloadingStates[staff.id]}
+                            className="text-purple-600 hover:text-purple-900"
+                          >
+                            {downloadingStates[staff.id] ? (
+                              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                              </svg>
+                            ) : (
+                              <ArrowDownToLine className="h-4 w-4" />
+                            )}
                           </Button>
                           <Button
                             variant="ghost"

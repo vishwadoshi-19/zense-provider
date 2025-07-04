@@ -52,11 +52,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     doc.image(
       staff.jobRole === "nurse"
         ? staff.gender === "male"
-          ? "public/nurse_male.png"
-          : "public/nurse_female.png"
+          ? "public/uploads/nurse_male.png"
+          : "public/uploads/nurse_female.png"
         : staff.gender === "male"
-        ? "public/attendant_male.png"
-        : "public/attendant_female.png",
+        ? "public/uploads/attendant_male.png"
+        : "public/uploads/attendant_female.png",
       leftX + colWidth / 2 - 48,
       y + 10,
       { width: 96, height: 96, fit: [96, 96], align: "center" }

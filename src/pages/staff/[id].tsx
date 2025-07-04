@@ -4,6 +4,7 @@ import StaffProfile from "@/components/staff/StaffProfile";
 import { getGroupedDutiesByRole } from "@/constants/duties";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/utils/firebase";
+import { generateStaffPDFReport } from "@/lib/downloadPDF";
 
 const StaffDetailPage = () => {
   const router = useRouter();
@@ -12,6 +13,7 @@ const StaffDetailPage = () => {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -50,27 +52,16 @@ const StaffDetailPage = () => {
   // Get grouped duties for the staff's jobRole
   const groupedDuties = staff?.jobRole ? getGroupedDutiesByRole(staff.jobRole) : {};
 
-  // PDF download handler (calls server-side API)
+  // PDF download handler (calls cloud function)
   const handleDownloadPDF = async () => {
     if (!staff) return;
+    setDownloading(true);
     try {
-      const response = await fetch("/api/generateStaffPDF", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staff, reviews, groupedDuties }),
-      });
-      if (!response.ok) throw new Error("Failed to generate PDF");
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${staff.name || staff.fullName || "Staff"}_Resume.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      await generateStaffPDFReport(staff, groupedDuties, reviews);
     } catch (err) {
       alert("Failed to download PDF");
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -87,9 +78,20 @@ const StaffDetailPage = () => {
       <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={handleDownloadPDF}
-          className="px-6 py-3 rounded-full bg-green-600 text-white font-semibold shadow-lg hover:bg-green-700 transition text-base"
+          className="px-6 py-3 rounded-full bg-green-600 text-white font-semibold shadow-lg hover:bg-green-700 transition text-base flex items-center justify-center min-w-[140px]"
+          disabled={downloading}
         >
-          Download PDF
+          {downloading ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+              Downloading...
+            </span>
+          ) : (
+            "Download PDF"
+          )}
         </button>
       </div>
     </>

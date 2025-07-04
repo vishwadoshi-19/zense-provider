@@ -78,10 +78,10 @@ export const StaffProfile: React.FC<StaffProfileProps> = ({
                 <span className="text-gray-500">Education:</span>
                 <span className="text-gray-800 font-semibold">{capitalize(staff.educationQualification) || "N/A"}</span>
               </div>
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <span className="text-gray-500">Native State:</span>
                 <span className="text-gray-800 font-semibold">{capitalize(staff.district) || "N/A"}</span>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -150,7 +150,7 @@ export const StaffProfile: React.FC<StaffProfileProps> = ({
       </div>
 
       {/* Reviews at the bottom */}
-      <div className="border-t border-gray-100 px-8 py-6 bg-white">
+      {/* <div className="border-t border-gray-100 px-8 py-6 bg-white">
         <h3 className="font-semibold text-teal-800 mb-2">Here's what other customers say about me</h3>
         <div className="space-y-3">
           {reviews && reviews.length > 0 ? (
@@ -164,7 +164,7 @@ export const StaffProfile: React.FC<StaffProfileProps> = ({
             <div className="text-xs text-gray-400">No reviews available yet.</div>
           )}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
